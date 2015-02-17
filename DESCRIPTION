@@ -1,0 +1,12 @@
+Package: dockertest
+Title: Docker images from R packages for testing
+Version: 0.1.0
+Authors@R: "Rich FitzJohn <rich.fitzjohn@gmail.com> [aut, cre]"
+Description: Creates testing infrastructure for docker images.  This
+  is a work in progress.
+Depends: R (>= 3.1.2)
+Imports: devtools
+SystemDepends: Docker
+License: BSD_2_clause + file LICENSE
+LazyData: true
+Suggests: testthat

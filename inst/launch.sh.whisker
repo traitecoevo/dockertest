@@ -1,0 +1,4 @@
+#!/bin/bash
+{{{boot2docker}}}
+SOURCE_DIR=$(dirname $(pwd))
+docker run -v ${SOURCE_DIR}:/src -it {{{tag}}} $@

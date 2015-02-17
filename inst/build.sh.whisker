@@ -1,0 +1,3 @@
+#!/bin/bash
+{{{boot2docker}}}
+docker build -t {{{tag}}} .

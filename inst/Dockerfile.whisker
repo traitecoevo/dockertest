@@ -1,0 +1,10 @@
+FROM r-base
+
+RUN apt-get update && apt-get -y install curl git libcurl4-openssl-dev ssh
+
+RUN install2.r {{{dependencies}}}
+
+COPY scripts /usr/local/bin/
+
+WORKDIR /root
+CMD bash
