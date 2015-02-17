@@ -1,3 +1,8 @@
 #!/bin/bash
+set -e
 {{{boot2docker}}}
+if [ ! -d "scripts"]; then
+  dockertest:::copy_scripts_dir()
+fi
 docker build -t {{{tag}}} .
+rm -rf scripts

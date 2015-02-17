@@ -1,2 +1,4 @@
 ^\.travis\.yml$
 Makefile
+docker
+dockertest*tar.gz

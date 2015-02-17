@@ -1,8 +1,11 @@
 FROM r-base
 
-RUN apt-get update && apt-get -y install curl git libcurl4-openssl-dev ssh
+RUN apt-get update && apt-get -y install {{{dependencies.system}}}
 
-RUN install2.r {{{dependencies}}}
+RUN install2.r --error {{{dependencies.CRAN}}}
+{{{#dependencies.github}}}
+RUN installGithub.r {{{dependencies.github}}}
+{{{/dependencies.github}}}
 
 COPY scripts /usr/local/bin/
 

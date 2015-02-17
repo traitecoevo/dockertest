@@ -4,7 +4,8 @@
 \alias{build}
 \title{Build a docker container}
 \usage{
-build(path_build = ".", path_package = NULL, use_cache = TRUE)
+build(path_build = ".", path_package = NULL, use_cache = TRUE,
+  prepare = TRUE)
 }
 \arguments{
 \item{path_build}{Path to the Dockerfile}
@@ -12,6 +13,9 @@ build(path_build = ".", path_package = NULL, use_cache = TRUE)
 \item{path_package}{Path to the package}
 
 \item{use_cache}{Set to FALSE to skip docker's cache}
+
+\item{prepare}{Rerun \code{\link{prepare}} before building the
+image?}
 }
 \description{
 Build a docker container

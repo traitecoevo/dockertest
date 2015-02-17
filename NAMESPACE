@@ -2,5 +2,7 @@
 
 export(build)
 export(dockerfile)
+export(prepare)
 importFrom(devtools,as.package)
 importFrom(whisker,whisker.render)
+importFrom(yaml,yaml.load)

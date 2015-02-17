@@ -2,3 +2,5 @@
 .Rhistory
 .RData
 docker/
+dockertest*gz
+*.Rcheck

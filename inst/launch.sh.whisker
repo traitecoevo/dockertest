@@ -1,4 +1,24 @@
 #!/bin/bash
+set -e
+
+case $1 in
+    R)
+        CMD=R_package_root.sh;;
+    R_test_dir)
+        CMD=R_test_dir.sh;;
+    check)
+        CMD=R_cmd_check.sh;;
+    devtools_test)
+        CMD=devtools_test.sh;;
+    devtools_check)
+        CMD=devtools_check.sh;;
+    bash)
+        CMD=bash;;
+    *)
+        echo $"Usage launch.sh [R|R_test_dir|check|devtools|devtools_check|bash]"
+        exit 1
+        ;;
+esac
+
 {{{boot2docker}}}
-SOURCE_DIR=$(dirname $(pwd))
-docker run -v ${SOURCE_DIR}:/src -it {{{tag}}} $@
+docker run -v {{{source_dir}}}:/src -it {{{tag}}} $CMD
