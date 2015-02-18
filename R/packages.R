@@ -98,9 +98,10 @@ package_dependencies_recursive <- function(packages, all=FALSE) {
 fetch_PACKAGES <- function(force=FALSE) {
   dest <- file.path(system.file(package="dockertest"), "PACKAGES.rds")
   if (force || !file.exists(dest)) {
+    tmp <- tempfile()
     url <- "https://github.com/metacran/PACKAGES/raw/master/PACKAGES"
-    downloader::download(url, "PACKAGES")
-    dat <- read.dcf("PACKAGES")
+    downloader::download(url, tmp)
+    dat <- read.dcf(tmp)
     rownames(dat) <- dat[, "Package"]
     try(saveRDS(dat, dest))
   } else {
