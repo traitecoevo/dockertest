@@ -4,16 +4,6 @@
 ## this on a machine where they have all the packages installed, we
 ## can go through and be fairly clever about this.
 
-## package_dependencies <- function(dat, all=FALSE) {
-##   names(dat) <- tolower(names(dat))
-##   v <- c("Depends", "Imports", "LinkingTo")
-##   if (all) {
-##     v <- c(v, "Suggests", "VignetteBuilder")
-##   }
-##   deps <- unlist(dat[tolower(v)], use.names=FALSE)
-##   devtools:::parse_deps(paste(deps, collapse = ","))
-## }
-
 ## The system requirements field is pretty ugly, but they can be
 ## parsed pretty easily by eye.  I've done a few in
 ## system_requirements_sanitise.yml but these are just a handful that

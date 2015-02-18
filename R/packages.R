@@ -46,7 +46,8 @@ description_field <- function(x, v) {
   x[[match(tolower(v), tolower(names(x)))]]
 }
 
-package_dependencies_recursive <- function(packages, all=FALSE) {
+package_dependencies_recursive <- function(packages, package_info,
+                                           all=FALSE) {
   v <- c("Depends", "Imports", "LinkingTo")
   if (all) {
     v <- c(v, "Suggests", "VignetteBuilder")
@@ -60,27 +61,26 @@ package_dependencies_recursive <- function(packages, all=FALSE) {
     ret
   }
   join_deps <- function(x) {
-    gsub("\n", " ", paste(na.omit(x), collapse=", "))
+    gsub("\n", " ", paste(na.omit(x[v]), collapse=", "))
   }
 
-  dat <- try(fetch_PACKAGES())
-  if (inherits(dat, "try-error")) { # offline, etc
-    dat <- matrix(nrow=0, ncol=length(v), dimnames=list(character(0), v))
-  }
+  ## TODO: Need to pass in either the configuration or a list of
+  ## github repos here.
 
   seen <- base_packages()
   deps <- NULL
   while (length(packages) > 0L) {
-    i <- packages %in% rownames(dat)
+    i <- packages %in% rownames(package_info)
     str <- character(0)
     ## From PACKAGES:
     if (any(i)) {
-      str <- c(str, apply(dat[packages[i], v, drop=FALSE], 1, join_deps))
+      str <- c(str, apply(package_info[packages[i], v, drop=FALSE],
+                          1, join_deps))
     }
     ## Offline, or locally installed
     if (any(!i)) {
       str <- c(str, sapply(package_descriptions(packages[!i]),
-                           function(x) join_deps(x[v])))
+                           join_deps))
     }
     x <- join(lapply(str, devtools:::parse_deps))
     seen <- c(seen, packages)
@@ -95,7 +95,7 @@ package_dependencies_recursive <- function(packages, all=FALSE) {
 }
 
 ##' @importFrom downloader download
-fetch_PACKAGES <- function(force=FALSE) {
+fetch_PACKAGES_CRAN <- function(force=FALSE) {
   dest <- file.path(user_data_dir(), "PACKAGES.rds")
   if (force || !file.exists(dest)) {
     tmp <- tempfile()
@@ -118,28 +118,87 @@ fetch_PACKAGES_crandb <- function(force=FALSE) {
     ## From metacran/crandb's DB:
     api <- "/-/latest"
     url <- paste0("http://crandb.r-pkg.org", "/", api)
+    message("Downloading crandb/latest - may take a minute")
     dat_json <- httr::content(httr::GET(url), as="text", encoding="UTF-8")
     dat <- jsonlite::fromJSON(dat_json)
 
     ## Convert the nice crandb metadata into the sort that we can
-    ## process from other packages.
+    ## process from other packages.  We want to get the
+    ## SystemDependencies out of here too.
     clean <- function(x) {
       join_field <- function(x) {
         if (is.null(x)) NA_character_ else paste(names(x), collapse=", ")
       }
-      v <- c("Depends", "Imports", "LinkingTo",
-             "Suggests", "VignetteBuilder")
-      x <- x[v]
-      names(x) <- v
-      x <- lapply(x, join_field)
+      to_join <- c("Depends", "Imports", "LinkingTo",
+                   "Suggests", "VignetteBuilder")
+      x <- x[description_fields()]
+      names(x) <- description_fields()
+      x[to_join] <- lapply(x[to_join], join_field)
+      if (is.null(x$SystemRequirements)) {
+        x$SystemRequirements <- NA_character_
+      }
       unlist(x)
     }
 
-    ret <- cbind(Package=names(dat),
-                 do.call("rbind", lapply(dat, clean)))
+    ret <- do.call("rbind", lapply(dat, clean))
     try(saveRDS(ret, dest))
   } else {
     ret <- readRDS(dest)
   }
   invisible(ret)
+}
+
+##' @importFrom downloader download
+fetch_PACKAGES_github <- function(repos) {
+  path <- file.path(user_data_dir(), "github")
+  if (file.exists(path)) {
+    unlink(path, recursive=TRUE)
+  }
+  dir.create(path, FALSE, TRUE)
+  fmt <- "https://raw.githubusercontent.com/%s/master/DESCRIPTION"
+  dat <- list()
+  for (r in repos) {
+    path_r <- file.path(path, r)
+    dest_r <- file.path(path_r, "DESCRIPTION")
+    dir.create(path_r, FALSE, TRUE)
+    ## Ideally recover here:
+    ##   - use previous data?
+    ##   - add nothing (current option)
+    ##     - this means later we'll use installed metadata
+    message("Fetching ", r)
+    ok <- try(downloader::download(sprintf(fmt, r), dest_r))
+    if (!inherits(ok, "try-error")) {
+      dat_r <- read.dcf(dest_r)
+      dat_r <- drop(dat_r)[description_fields()]
+      names(dat_r) <- description_fields()
+      dat[[r]] <- dat_r
+    }
+  }
+
+  if (length(dat) == 0L) {
+    ret <- NULL
+  } else {
+    ret <- do.call("rbind", dat)
+    rownames(ret) <- sub("^.+/", "", names(dat))
+  }
+  ret
+}
+
+fetch_PACKAGES <- function(repos) {
+  dat_crandb <- fetch_PACKAGES_crandb()
+  dat_github <- fetch_PACKAGES_github(repos)
+  if (!is.null(dat_github)) {
+    to_drop <- rownames(dat_crandb) %in% rownames(dat_github)
+    dat <- rbind(dat_crandb[!to_drop, , drop=FALSE],
+                 dat_github)
+  } else {
+    dat <- dat_crandb
+  }
+  dat
+}
+
+description_fields <- function() {
+  c("Package",
+    "Depends", "Imports", "LinkingTo", "Suggests", "VignetteBuilder",
+    "SystemRequirements")
 }

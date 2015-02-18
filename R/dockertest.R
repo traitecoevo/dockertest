@@ -116,12 +116,14 @@ dependencies <- function(path_package=NULL) {
   ## NOTE: Being sneaky, using hidden function.
   pkg <- as_package(path_package)
   package_names <- devtools:::pkg_deps(pkg, dependencies=TRUE)[, "name"]
+  package_info <- package_info <- fetch_PACKAGES(config$packages$github)
 
   ## System dependencies, based on this.  We traverse through packages
   ## that are installed on *this* system and look at the
   ## SystemRequirements field and translate that into a set of apt-get
   ## install targets.  Additional things in config are also added.
-  deps_system <- dependencies_system(package_names, config, path_package)
+  deps_system <- dependencies_system(package_names, package_info,
+                                     config, path_package)
 
   ## For packages, we take the list of required packages and split
   ## them up into github and non-github packages, based on config.
@@ -136,13 +138,15 @@ dependencies <- function(path_package=NULL) {
   c(list(system=deps_system, repos=repos), deps_packages)
 }
 
-dependencies_system <- function(package_names, config, path_package=NULL) {
+dependencies_system <- function(package_names, package_info,
+                                config, path_package=NULL) {
   ## These are required by the bootstrap:
   dockertest_system <- c("curl", "git", "libcurl4-openssl-dev", "ssh")
 
   ## Starting with our package dependencies we can identify the full
   ## list.
-  dat <- package_dependencies_recursive(package_names)
+
+  dat <- package_dependencies_recursive(package_names, package_info)
   pkgs <- sort(unique(c(package_names, dat$name)))
   pkgs <- setdiff(pkgs, config[["system_ignore_packages"]])
 
