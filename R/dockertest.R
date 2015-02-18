@@ -33,7 +33,6 @@ dockerfile <- function(filename=NULL, path_package=NULL) {
 prepare <- function(path_build=".", path_package=NULL) {
   str <- dockerfile(file.path(path_build, "Dockerfile"), path_package)
   write_scripts(path_build, path_package)
-  copy_scripts_dir(path_build)
 }
 
 ##' Build a docker container
@@ -57,7 +56,6 @@ build <- function(path_build=".", path_package=NULL,
             if (!use_cache) "--no-cache",
             path_build)
   system2("docker", args)
-  unlink("scripts", recursive=TRUE)
 }
 
 write_scripts <- function(path_build=".", path_package=NULL) {
@@ -78,9 +76,10 @@ write_scripts <- function(path_build=".", path_package=NULL) {
   invisible(NULL)
 }
 
-copy_scripts_dir <- function(path_build=".") {
-  file.copy(system.file("scripts", package="dockertest", mustWork=TRUE),
-            path_build, recursive=TRUE)
+copy_scripts_dir <- function(path) {
+  path_scripts <- system.file("scripts", package="dockertest", mustWork=TRUE)
+  scripts <- dir(path_scripts, full.names=TRUE)
+  file.copy(scripts, path)
   invisible(NULL)
 }
 
@@ -187,18 +186,21 @@ dependencies_system <- function(package_names, package_info,
 
 dependencies_packages <- function(package_names, config, path_package) {
   dockertest_packages <- c("devtools", "testthat")
-  deps <- list(R=setdiff(union(dockertest_packages, package_names),
-                 base_packages()))
+  ## Start with all the packages:
+  deps_names <- setdiff(union(dockertest_packages, package_names),
+                        base_packages())
+  deps <- list(R=deps_names, github="richfitz/dockertest")
   if (!is.null(config)) {
-    deps$github <- config[["packages"]][["github"]]
+    deps$github <- union(deps$github,
+                         config[["packages"]][["github"]])
     if (!is.null(deps$github)) {
       ## NOTE: don't allow removing devtools here though, because that
       ## will break the bootstrap (CRAN devtools is required for
       ## downloading github devtools if it's needed).
-      i <- match(setdiff(sub("^.*/", "", deps$github), "devtools"),
-                 deps$R)
-      if (length(i) > 0L) {
-        deps$R <- deps$R[-i]
+      i <- (setdiff(sub("^.*/", "", deps$github), "devtools")
+            %in% deps$R)
+      if (any(i)) {
+        deps$R <- deps$R[!i]
       }
     }
   }

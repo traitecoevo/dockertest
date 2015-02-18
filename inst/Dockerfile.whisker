@@ -16,7 +16,7 @@ RUN install2.r --error {{{dependencies.repos}}} {{{dependencies.R}}}
 RUN installGithub.r {{{dependencies.github}}}
 {{{/dependencies.github}}}
 
-COPY scripts /usr/local/bin/
+RUN r -e 'dockertest:::copy_scripts_dir("/usr/local/bin")'
 
 WORKDIR /root
 CMD bash
