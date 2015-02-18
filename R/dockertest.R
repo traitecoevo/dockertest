@@ -213,12 +213,22 @@ package_repos <- function(path_package) {
 
 ## No validation here yet.
 load_config <- function(path_package=NULL) {
-  config_file <- file.path(find_package_root(path_package),
-                           ".dockertest.yml")
+  ## We'll look in the local directory and in the package root.
+  config_file_local <- ".dockertest.yml"
+  config_file_package <- file.path(find_package_root(path_package),
+                                   ".dockertest.yml")
+  if (file.exists(config_file_local)) {
+    ## Ideally here we'd merge them, but that's hard to do.
+    if (file.exists(config_file_package)) {
+      warning("Ignoring package .dockertest.yml", immediate.=TRUE)
+    }
+    config_file <- config_file_local
+  } else {
+    config_file <- config_file_package
+  }
   defaults <- list(system_ignore_packages=NULL,
                    system=NULL,
                    packages=list(github=NULL))
-
   if (file.exists(config_file)) {
     ret <- yaml_read(config_file)
     modifyList(defaults, ret)
