@@ -1,20 +1,17 @@
 # These are just some packages I found on my computer's
 # SystemDependencies.  Filling in a list here would actually not be
 # that hard.
-GLU Library: ~
 ICU4C: libicu-dev
 ImageMagick: ~
-OpenGL: ~
 fftw3: fftw3-dev
-ghostscript: ~
-gmp: ~
+gmp: libgmp-dev
 gsl: libgsl0-dev
-java: ~
+java: [default-jre, default-jdk]
 libcurl: libcurl4-openssl-dev
 libpng: libpng12-dev
 libxml2: libxml2-dev
 nlopt: libnlopt-dev
-pandoc: ~
-perl: ~
+pandoc: pandoc
+perl: ~ # installed already
 python-dev: python-dev
-zlib: ~
+zlib: zlib1g-dev
