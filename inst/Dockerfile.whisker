@@ -1,4 +1,4 @@
-FROM r-base
+FROM {{{image}}}
 
 RUN apt-get update && apt-get -y install {{{dependencies.system}}}
 

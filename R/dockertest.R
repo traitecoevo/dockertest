@@ -9,7 +9,8 @@
 ##' @importFrom devtools as.package
 ##' @importFrom whisker whisker.render
 dockerfile <- function(filename=NULL, path_package=NULL) {
-  deps <- dependencies(path_package)
+  config <- load_config(path_package)
+  deps <- dependencies(path_package, config)
   p <- function(x) {
     if (length(x) <= 1) x else paste(c("", sort(x)), collapse="  \\\n    ")
   }
@@ -17,7 +18,8 @@ dockerfile <- function(filename=NULL, path_package=NULL) {
   template <- system.file("Dockerfile.whisker", package="dockertest",
                           mustWork=TRUE)
   str <- whisker.render(readLines(template),
-                        list(dependencies=lapply(deps, p)))
+                        list(image=config[["image"]],
+                             dependencies=lapply(deps, p)))
   if (!is.null(filename)) {
     writeLines(str, filename)
   }
@@ -107,9 +109,7 @@ docker_tagname <- function(path_package) {
          tolower(package_name(path_package)))
 }
 
-dependencies <- function(path_package=NULL) {
-  config <- load_config(path_package)
-
+dependencies <- function(path_package=NULL, config) {
   ## *Names* of packages that we depend on.  This is just the
   ## immediate set.
   ## NOTE: Being sneaky, using hidden function.
@@ -245,7 +245,8 @@ load_config <- function(path_package=NULL) {
   }
   defaults <- list(system_ignore_packages=NULL,
                    system=NULL,
-                   packages=list(github=NULL))
+                   packages=list(github=NULL),
+                   image="r-base")
   if (file.exists(config_file)) {
     ret <- yaml_read(config_file)
     modifyList(defaults, ret)

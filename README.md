@@ -39,3 +39,5 @@ which will try to construct a Dockerfile, and create two scripts (`build.sh`) wh
   * `devtools_check` clone your repo and run `devtools::check()` on it
 
 The `launch.sh` script mounts the package root at `/src` on the docker image, so that you can see the actual source directory, and can clone from it - no need to push anywhere, or deal with keys, etc.  Your package is *not* copied across during the build, so you don't need to rebuild after changing it.
+
+Dockerfiles use `FROM r-base` by default.  Adding `image: rocker/ropensci` or some other name will change this.
