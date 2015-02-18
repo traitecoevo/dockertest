@@ -150,23 +150,18 @@ fetch_PACKAGES_crandb <- function(force=FALSE) {
 ##' @importFrom downloader download
 fetch_PACKAGES_github <- function(repos) {
   path <- file.path(user_data_dir(), "github")
-  if (file.exists(path)) {
-    unlink(path, recursive=TRUE)
-  }
   dir.create(path, FALSE, TRUE)
+
   fmt <- "https://raw.githubusercontent.com/%s/master/DESCRIPTION"
   dat <- list()
   for (r in repos) {
     path_r <- file.path(path, r)
     dest_r <- file.path(path_r, "DESCRIPTION")
     dir.create(path_r, FALSE, TRUE)
-    ## Ideally recover here:
-    ##   - use previous data?
-    ##   - add nothing (current option)
-    ##     - this means later we'll use installed metadata
     message("Fetching ", r)
-    ok <- try(downloader::download(sprintf(fmt, r), dest_r))
-    if (!inherits(ok, "try-error")) {
+    ok <- try(downloader::download(sprintf(fmt, r), dest_r,
+                                   quiet=TRUE))
+    if (file.exists(dest_r)) {
       dat_r <- read.dcf(dest_r)
       dat_r <- drop(dat_r)[description_fields()]
       names(dat_r) <- description_fields()

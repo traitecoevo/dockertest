@@ -115,18 +115,28 @@ dependencies <- function(path_package=NULL) {
   ## NOTE: Being sneaky, using hidden function.
   pkg <- as_package(path_package)
   package_names <- devtools:::pkg_deps(pkg, dependencies=TRUE)[, "name"]
-  package_info <- package_info <- fetch_PACKAGES(config$packages$github)
-
-  ## System dependencies, based on this.  We traverse through packages
-  ## that are installed on *this* system and look at the
-  ## SystemRequirements field and translate that into a set of apt-get
-  ## install targets.  Additional things in config are also added.
-  deps_system <- dependencies_system(package_names, package_info,
-                                     config, path_package)
 
   ## For packages, we take the list of required packages and split
   ## them up into github and non-github packages, based on config.
+  ## This function may identify additional github packages that are
+  ## needed.
   deps_packages <- dependencies_packages(package_names, config, path_package)
+
+  ## Gather metadata information for all CRAN packages and all
+  ## referenced github packages.  This uses crandb, and I need to work
+  ## out a way of gracefully expiring that information.  The github
+  ## bits are redownloaded each time.
+  package_info <- fetch_PACKAGES(deps_packages$github)
+
+  ## System dependencies, based on this.  We use
+  ##   1. github information
+  ##   2. CRAN information
+  ##   3. local package installation information
+  ## in decending order of preference.  We then try to coerce this
+  ## into a set of suitable packages for travis.  Hints in
+  ## .dockertest.yml and .travis.yml may come in helpful here.
+  deps_system <- dependencies_system(package_names, package_info,
+                                     config, path_package)
 
   ## Some packages come from different places:
   repos <- package_repos(path_package)
@@ -198,8 +208,7 @@ dependencies_packages <- function(package_names, config, path_package) {
     ## NOTE: don't allow removing devtools here though, because that
     ## will break the bootstrap (CRAN devtools is required for
     ## downloading github devtools if it's needed).
-    i <- (setdiff(sub("^.*/", "", deps$github), "devtools")
-          %in% deps$R)
+    i <- (deps$R %in% setdiff(sub("^.*/", "", deps$github), "devtools"))
     if (any(i)) {
       deps$R <- deps$R[!i]
     }
