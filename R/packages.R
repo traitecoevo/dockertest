@@ -109,3 +109,38 @@ fetch_PACKAGES <- function(force=FALSE) {
   }
   invisible(dat)
 }
+
+##' @importFrom httr GET content
+##' @importFrom jsonlite fromJSON
+fetch_PACKAGES_crandb <- function(force=FALSE) {
+  dest <- file.path(system.file(package="dockertest"),
+                    "PACKAGES_crandb.rds")
+  if (force || !file.exists(dest)) {
+    ## From metacran/crandb's DB:
+    api <- "/-/latest"
+    url <- paste0("http://crandb.r-pkg.org", "/", api)
+    dat_json <- httr::content(httr::GET(url), as="text", encoding="UTF-8")
+    dat <- jsonlite::fromJSON(dat_json)
+
+    ## Convert the nice crandb metadata into the sort that we can
+    ## process from other packages.
+    clean <- function(x) {
+      join_field <- function(x) {
+        if (is.null(x)) NA_character_ else paste(names(x), collapse=", ")
+      }
+      v <- c("Depends", "Imports", "LinkingTo",
+             "Suggests", "VignetteBuilder")
+      x <- x[v]
+      names(x) <- v
+      x <- lapply(x, join_field)
+      unlist(x)
+    }
+
+    ret <- cbind(Package=names(dat),
+                 do.call("rbind", lapply(dat, clean)))
+    try(saveRDS(ret, dest))
+  } else {
+    ret <- readRDS(dest)
+  }
+  invisible(ret)
+}

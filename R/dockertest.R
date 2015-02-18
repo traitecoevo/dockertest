@@ -147,6 +147,8 @@ dependencies_system <- function(package_names, config, path_package=NULL) {
   pkgs <- setdiff(pkgs, config[["system_ignore_packages"]])
 
   dat <- package_descriptions(pkgs)
+  ## Here, we can use the PACKAGES_crandb for many package's
+  ## requirements.
   sys_reqs <- lapply(dat, description_field, "SystemRequirements")
   reqs <- system_requirements_apt_get(system_requirements_sanitise(sys_reqs))
 
