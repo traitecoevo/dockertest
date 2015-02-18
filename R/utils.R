@@ -27,3 +27,10 @@ read_file <- function(filename, ...) {
 is_mac <- function() {
   Sys.info()[["sysname"]] == "Darwin"
 }
+
+##' @importFrom rappdirs user_cache_dir
+user_data_dir <- function() {
+  path <- rappdirs::user_cache_dir("dockertest")
+  dir.create(path, FALSE, TRUE)
+  path
+}

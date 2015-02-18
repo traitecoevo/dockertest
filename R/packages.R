@@ -96,7 +96,7 @@ package_dependencies_recursive <- function(packages, all=FALSE) {
 
 ##' @importFrom downloader download
 fetch_PACKAGES <- function(force=FALSE) {
-  dest <- file.path(system.file(package="dockertest"), "PACKAGES.rds")
+  dest <- file.path(user_data_dir(), "PACKAGES.rds")
   if (force || !file.exists(dest)) {
     tmp <- tempfile()
     url <- "https://github.com/metacran/PACKAGES/raw/master/PACKAGES"
@@ -113,8 +113,7 @@ fetch_PACKAGES <- function(force=FALSE) {
 ##' @importFrom httr GET content
 ##' @importFrom jsonlite fromJSON
 fetch_PACKAGES_crandb <- function(force=FALSE) {
-  dest <- file.path(system.file(package="dockertest"),
-                    "PACKAGES_crandb.rds")
+  dest <- file.path(user_data_dir(), "PACKAGES_crandb.rds")
   if (force || !file.exists(dest)) {
     ## From metacran/crandb's DB:
     api <- "/-/latest"
