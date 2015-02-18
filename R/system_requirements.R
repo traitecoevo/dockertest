@@ -57,3 +57,15 @@ system_requirements_apt_get <- function(reqs) {
   unresolved <- reqs[is.na(i)]
   list(resolved=resolved, unresolved=unresolved)
 }
+
+## Try and get requirements from travis:
+system_requirements_travis <- function(path_package=NULL) {
+  path_package <- find_package_root(path_package)
+  travis_yml <- file.path(path_package, ".travis.yml")
+  if (file.exists(travis_yml)) {
+    travis <- yaml_read(travis_yml)
+    re <- ".*apt-get\\s+install\\s+"
+    x <- sub(re, "", grep(re, travis$before_script, value=TRUE))
+    unlist(strsplit(x, "\\s+"))
+  }
+}

@@ -150,6 +150,12 @@ dependencies_system <- function(package_names, config, path_package=NULL) {
   sys_reqs <- lapply(dat, description_field, "SystemRequirements")
   reqs <- system_requirements_apt_get(system_requirements_sanitise(sys_reqs))
 
+  ## Also haul things from travis:
+  reqs_travis <- system_requirements_travis(path_package)
+  if (!is.null(reqs_travis)) {
+    reqs$resolved <- sort(unique(c(reqs$resolved, reqs_travis)))
+  }
+
   if (length(reqs$unresolved) > 0) {
     ## Resolving the name here is *ugly*, because I nuked the name
     ## already.  Most of these are a bit ugly anyway so should match
