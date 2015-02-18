@@ -23,3 +23,7 @@ read_file <- function(filename, ...) {
   ## assert_file_exists(filename)
   paste(readLines(filename), collapse="\n")
 }
+
+is_mac <- function() {
+  Sys.info()[["sysname"]] == "Darwin"
+}

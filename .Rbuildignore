@@ -2,3 +2,4 @@
 Makefile
 ^docker$
 dockertest*tar.gz
+inst/PACKAGES.rds

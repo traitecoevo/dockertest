@@ -1,0 +1,20 @@
+# These are just some packages I found on my computer's
+# SystemDependencies.  Filling in a list here would actually not be
+# that hard.
+GLU Library: ~
+ICU4C: libicu-dev
+ImageMagick: ~
+OpenGL: ~
+fftw3: fftw3-dev
+ghostscript: ~
+gmp: ~
+gsl: libgsl0-dev
+java: ~
+libcurl: libcurl4-openssl-dev
+libpng: libpng12-dev
+libxml2: libxml2-dev
+nlopt: libnlopt-dev
+pandoc: ~
+perl: ~
+python-dev: python-dev
+zlib: ~

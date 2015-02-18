@@ -4,3 +4,4 @@
 docker/
 dockertest*gz
 *.Rcheck
+inst/PACKAGES.rds

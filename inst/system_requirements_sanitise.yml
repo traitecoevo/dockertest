@@ -1,0 +1,21 @@
+RCurl:
+  # SystemRequirements:   libcurl (version 7.14.0 or higher)
+  #                       http://curl.haxx.se. On Linux systems, you will
+  #                       often have to explicitly install libcurl-devel to
+  #                       have the header files and the libcurl library.
+  - libcurl
+
+rmarkdown:
+  # SystemRequirements:   pandoc (>= 1.12.3) -
+  #                       http://johnmacfarlane.net/pandoc
+  - pandoc
+
+pander:
+  # SystemRequirements:   Pandoc (http://johnmacfarlane.net/pandoc) for
+  #                       exporting markdown files to other formats.
+  - pandoc
+
+rPython:
+  # SystemRequirements:   Python (>= 2.7) and Python headers and libraries
+  #                       (See the INSTALL file)
+  - python-dev

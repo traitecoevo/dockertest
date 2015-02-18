@@ -2,7 +2,14 @@ FROM r-base
 
 RUN apt-get update && apt-get -y install {{{dependencies.system}}}
 
-RUN install2.r --error {{{dependencies.CRAN}}}
+# More recent copy of install2.r so that we can set repos more easily
+RUN rm /usr/local/bin/install2.r && \
+  wget --no-check-certificate \
+  https://raw.githubusercontent.com/cboettig/littler/master/examples/install2.r\
+  -O /usr/local/bin/install2.r \
+  && chmod +x /usr/local/bin/install2.r
+
+RUN install2.r --error {{{dependencies.repos}}} {{{dependencies.R}}}
 {{{#dependencies.github}}}
 RUN installGithub.r {{{dependencies.github}}}
 {{{/dependencies.github}}}
