@@ -1,4 +1,3 @@
-
 ## Attempt to guess packages that won't be installable from CRAN
 ## because they are base, but might still be listed in a packages's
 ## various dependencies:
@@ -201,4 +200,16 @@ description_fields <- function() {
   c("Package",
     "Depends", "Imports", "LinkingTo", "Suggests", "VignetteBuilder",
     "SystemRequirements")
+}
+
+packages_github_travis <- function(path_package=NULL) {
+  path_package <- find_package_root(path_package)
+  travis_yml <- file.path(path_package, ".travis.yml")
+  if (file.exists(travis_yml)) {
+    travis <- yaml_read(travis_yml)
+    re <- ".*travis-tool\\.sh\\s+github_package\\s+"
+    to_check <- c(travis$install, travis$before_script)
+    x <- sub(re, "", grep(re, to_check, value=TRUE))
+    unlist(strsplit(x, "\\s+"))
+  }
 }

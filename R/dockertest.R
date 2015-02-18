@@ -187,21 +187,21 @@ dependencies_system <- function(package_names, package_info,
 dependencies_packages <- function(package_names, config, path_package) {
   dockertest_packages <- c("devtools", "testthat")
   ## Start with all the packages:
-  deps_names <- setdiff(union(dockertest_packages, package_names),
-                        base_packages())
-  deps <- list(R=deps_names, github="richfitz/dockertest")
-  if (!is.null(config)) {
-    deps$github <- union(deps$github,
-                         config[["packages"]][["github"]])
-    if (!is.null(deps$github)) {
-      ## NOTE: don't allow removing devtools here though, because that
-      ## will break the bootstrap (CRAN devtools is required for
-      ## downloading github devtools if it's needed).
-      i <- (setdiff(sub("^.*/", "", deps$github), "devtools")
-            %in% deps$R)
-      if (any(i)) {
-        deps$R <- deps$R[!i]
-      }
+  deps_R <- setdiff(union(dockertest_packages, package_names),
+                    base_packages())
+  deps_github <- unique(c("richfitz/dockertest",
+                          packages_github_travis(path_package),
+                          config[["packages"]][["github"]]))
+  deps <- list(R=deps_R, github=deps_github)
+
+  if (length(deps$github) > 0L) {
+    ## NOTE: don't allow removing devtools here though, because that
+    ## will break the bootstrap (CRAN devtools is required for
+    ## downloading github devtools if it's needed).
+    i <- (setdiff(sub("^.*/", "", deps$github), "devtools")
+          %in% deps$R)
+    if (any(i)) {
+      deps$R <- deps$R[!i]
     }
   }
   deps

@@ -55,7 +55,8 @@ system_requirements_travis <- function(path_package=NULL) {
   if (file.exists(travis_yml)) {
     travis <- yaml_read(travis_yml)
     re <- ".*apt-get\\s+install\\s+"
-    x <- sub(re, "", grep(re, travis$before_script, value=TRUE))
+    to_check <- c(travis$install, travis$before_script)
+    x <- sub(re, "", grep(re, to_check, value=TRUE))
     unlist(strsplit(x, "\\s+"))
   }
 }
