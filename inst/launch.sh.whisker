@@ -8,14 +8,14 @@ case $1 in
         CMD=R_test_dir.sh;;
     check)
         CMD=R_cmd_check.sh;;
-    devtools_test)
+    test|devtools_test)
         CMD=devtools_test.sh;;
     devtools_check)
         CMD=devtools_check.sh;;
     bash)
         CMD=bash;;
     *)
-        echo $"Usage launch.sh [R|R_test_dir|check|devtools|devtools_check|bash]"
+        echo $"Usage launch.sh [R|R_test_dir|check|devtools_test|devtools_check|bash]"
         exit 1
         ;;
 esac
