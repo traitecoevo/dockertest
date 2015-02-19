@@ -75,7 +75,43 @@ find_file_descend <- function(target, limit="/", error=TRUE) {
   ret
 }
 
-## TODO: identify other ones of these and replace
+
+## TODO: The github one should probably fetch the package and get the
+## name from there - otherwise things like geiger break.  There are a
+## few others too.  We can just nail that early on.
+##
+## One option is to download the DESCRIPTION file here.  Do that at
+## the same time that we do automatic expiry.
 github_package_name <- function(repo) {
   sub(".*/", "", repo)
+}
+
+local_package_name <- function(path) {
+  f <- function(x) {
+    description_field(devtools::as.package(x),  "Package")
+  }
+  unname(vapply(path, f, character(1)))
+}
+
+add_to_gitignore <- function(path) {
+  if (length(path) != 1) {
+    stop("Just one length for now")
+  }
+  git <- Sys.which("git")
+  if (system2(git, c("check-ignore", path), stderr=FALSE) != 0L) {
+    write(path, ".gitignore", append=TRUE)
+  }
+}
+
+git_clone <- function(repo, dest, quiet=FALSE) {
+  if (quiet) {
+    stderr <- stdout <- FALSE
+  } else {
+    stderr <- stdout <- ""
+  }
+  ok <- system2(Sys.which("git"), c("clone", repo, dest),
+                stderr=stderr, stdout=stdout)
+  if (ok != 0L) {
+    stop("Error cloning ", repo, " to ", dest)
+  }
 }

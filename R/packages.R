@@ -133,33 +133,62 @@ fetch_PACKAGES_github <- function(repos) {
     message("Fetching ", r)
     ok <- try(downloader::download(sprintf(fmt, r), dest_r,
                                    quiet=TRUE))
-    if (file.exists(dest_r)) {
-      dat_r <- read.dcf(dest_r)
-      dat_r <- drop(dat_r)[description_fields()]
-      names(dat_r) <- description_fields()
-      dat[[r]] <- dat_r
-    }
+    dat_r <- read.dcf(dest_r)
+    dat_r <- drop(dat_r)[description_fields()]
+    names(dat_r) <- description_fields()
+    dat[[r]] <- dat_r
   }
 
   if (length(dat) == 0L) {
     ret <- NULL
   } else {
     ret <- do.call("rbind", dat)
-    rownames(ret) <- github_package_name(names(dat))
+    ## NOTE: Here we use reported package names, unlike
+    ## github_package_names().
+    rownames(ret) <- ret[, "Package"]
   }
   ret
 }
 
-fetch_PACKAGES <- function(repos) {
-  dat_crandb <- fetch_PACKAGES_crandb()
-  dat_github <- fetch_PACKAGES_github(repos)
-  if (!is.null(dat_github)) {
-    to_drop <- rownames(dat_crandb) %in% rownames(dat_github)
-    dat <- rbind(dat_crandb[!to_drop, , drop=FALSE],
-                 dat_github)
-  } else {
-    dat <- dat_crandb
+fetch_PACKAGES_local <- function(paths, path_build) {
+  if (length(paths) == 0) {
+    return(NULL)
   }
+  dest <- file.path(path_build, ".local")
+  if (file.exists(dest)) {
+    unlink(dest, recursive=TRUE)
+  }
+  dir.create(dest, FALSE, TRUE)
+  add_to_gitignore(dest)
+
+  package_names <- local_package_name(paths)
+  paths_dest <- file.path(dest, package_names)
+
+  dat <- vector("list", length(paths))
+  for (i in seq_along(paths)) {
+    git_clone(paths[[i]], paths_dest[[i]])
+    dat_i <- read.dcf(file.path(paths_dest[[i]], "DESCRIPTION"))
+    dat_i <- drop(dat_i)[description_fields()]
+    names(dat_i) <- description_fields()
+    dat[[i]] <- dat_i
+  }
+  names(dat) <- package_names
+  names(package_names) <- paths
+  ret <- do.call("rbind", dat)
+  ret
+}
+
+fetch_PACKAGES <- function(github_repos, local_paths, build_dir) {
+  dat_crandb <- fetch_PACKAGES_crandb()
+  dat_github <- fetch_PACKAGES_github(github_repos)
+  dat_local  <- fetch_PACKAGES_local(local_paths, build_dir)
+
+  ## Ordering things this way means we prefer local over github over
+  ## cran.
+  dat <- rbind(dat_local, dat_github, dat_crandb)
+  keep <- !duplicated(rownames(dat))
+  dat <- dat[keep, , drop=FALSE]
+
   dat
 }
 

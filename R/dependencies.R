@@ -1,11 +1,10 @@
-dependencies <- function(path_project=NULL, config) {
+dependencies <- function(info, config) {
   ## Determine the *names* of packages that we depend on
   ## (`package_names`).  This is just the immediate set; not including
   ## their dependencies yet.
 
   ## NOTE: Being sneaky, using hidden function `pkg_deps` to parse
   ## dependencies; need to write my own for this.
-  info <- project_info(path_project)
   path_project <- info$path_project
   if (info$is_package) {
     pkg <- devtools::as.package(info$path_package)
@@ -22,22 +21,27 @@ dependencies <- function(path_project=NULL, config) {
     repos <- NULL
   }
 
-  ## For packages, we take the list of required packages and split
-  ## them up into github and non-github packages, based on config.
-  ## This function may identify additional github packages that are
-  ## needed from .travis.yml and from .dockertest.yml
-  deps_packages <- dependencies_packages(package_names, config, path_project)
-
-  ## Recompute the list of package names here, including any ones that
-  ## we added.
-  package_names <- c(deps_packages$R,
-                     github_package_name(deps_packages$github))
-
   ## Gather metadata information for all CRAN packages and all
   ## referenced github packages.  This uses crandb, and I need to work
   ## out a way of gracefully expiring that information.  The github
   ## bits are redownloaded each time.
-  package_info <- fetch_PACKAGES(deps_packages$github)
+
+  ## For packages, we take the list of required packages and split
+  ## them up into github and non-github packages, based on config.
+  ## This function may identify additional github packages that are
+  ## needed from .travis.yml and from .dockertest.yml
+  deps_packages <- dependencies_packages(package_names,
+                                         config, path_project)
+
+  ## Recompute the list of package names here, including any ones that
+  ## we added.
+  package_names <- c(deps_packages$R,
+                     names(deps_packages$github),
+                     names(deps_packages$local))
+
+  package_info <- fetch_PACKAGES(deps_packages$github,
+                                 deps_packages$local,
+                                 info$path_build)
 
   ## System dependencies, based on this.  We use
   ##   1. github information
@@ -55,7 +59,8 @@ dependencies <- function(path_project=NULL, config) {
 dependencies_system <- function(package_names, package_info,
                                 config, path_project=NULL) {
   ## These are required by the bootstrap:
-  dockertest_system <- c("curl", "git", "libcurl4-openssl-dev", "ssh")
+  dockertest_system <- c("curl", "ca-certificates", "git",
+                         "libcurl4-openssl-dev", "ssh")
 
   ## Starting with our package dependencies we can identify the full
   ## list.
@@ -122,18 +127,27 @@ dependencies_packages <- function(package_names, config, path_project) {
   deps_github <- unique(c("richfitz/dockertest",
                           packages_github_travis(path_project),
                           config[["packages"]][["github"]]))
-  deps <- list(R=deps_R, github=deps_github)
+  deps_local <- config[["packages"]][["local"]]
 
-  if (length(deps$github) > 0L) {
-    ## NOTE: don't allow removing devtools here though, because that
-    ## will break the bootstrap (CRAN devtools is required for
-    ## downloading github devtools if it's needed).
-    i <- deps$R %in% setdiff(github_package_name(deps$github), "devtools")
-    if (any(i)) {
-      deps$R <- deps$R[!i]
-    }
+  ## Now, filter things so that local packages replace github packages
+  ## and github packages replace R (CRAN) packages.
+  names(deps_R)      <- deps_R
+  names(deps_github) <- github_package_name(deps_github)
+  names(deps_local)  <- local_package_name(deps_local)
+
+  drop_github <- names(deps_github) %in% names(deps_local)
+  if (any(drop_github)) {
+    deps_github <- deps_github[!drop_github]
   }
-  deps
+
+  ## However, take care not to drop devtools from the R list.
+  non_R <- c(names(deps_local), names(deps_github) )
+  drop_R <- names(deps_R) %in% setdiff(non_R, "devtools")
+  if (any(drop_R)) {
+    deps_R <- deps_R[!drop_R]
+  }
+
+  list(R=deps_R, github=deps_github, local=deps_local)
 }
 
 ## No validation here yet.
@@ -154,7 +168,7 @@ load_config <- function(path_project=NULL) {
   }
   defaults <- list(system_ignore_packages=NULL,
                    system=NULL,
-                   packages=list(github=NULL),
+                   packages=list(github=NULL, local=NULL),
                    image="r-base")
   if (file.exists(config_file)) {
     ret <- yaml_read(config_file)

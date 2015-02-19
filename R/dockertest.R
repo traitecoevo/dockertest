@@ -21,7 +21,7 @@ prepare <- function(suffix="-test") {
 ##' @param prepare Rerun \code{\link{prepare}} before building the
 ##' image?
 ##' @export
-build <- function(suffix, prepare=TRUE, use_cache=TRUE) {
+build <- function(suffix="-test", prepare=TRUE, use_cache=TRUE) {
   info <- project_info(suffix)
   if (prepare) {
     prepare(suffix)
@@ -32,21 +32,29 @@ build <- function(suffix, prepare=TRUE, use_cache=TRUE) {
 ##' @importFrom whisker whisker.render
 dockerfile_test <- function(info) {
   config <- load_config(info$path_project)
-  deps <- dependencies(info$path_project, config)
+  deps <- dependencies(info, config)
   p <- function(x) {
-    if (length(x) <= 1) x else paste(c("", sort(x)), collapse="  \\\n    ")
+    if (length(x) <= 1) unname(x) else
+    paste(c("", sort(x)), collapse="  \\\n    ")
   }
 
   ## Repos needs to go in as a long arg:
   if (!is.null(deps$repos)) {
     deps$repos <- sprintf("--repos=%s", deps$repos)
   }
+  if (!is.null(deps$local)) {
+    deps$local <- paste(file.path("/local", names(deps$local)),
+                        collapse=" ")
+  }
+  deps$system <- p(deps$system)
+  deps$github <- p(deps$github)
+  deps$R      <- p(deps$R)
+  deps$repos  <- p(deps$repos)
 
   template <- system.file("Dockerfile.whisker", package="dockertest",
                           mustWork=TRUE)
-  str <- whisker.render(readLines(template),
-                        list(image=config[["image"]],
-                             dependencies=lapply(deps, p)))
+  dat <- list(image=config[["image"]], dependencies=deps)
+  str <- whisker.render(readLines(template), dat)
   invisible(str)
 }
 
