@@ -4,10 +4,10 @@
 \alias{prepare}
 \title{Prepare for docker build}
 \usage{
-prepare(path_build = ".")
+prepare(suffix = "-test")
 }
 \arguments{
-\item{path_build}{Path to the Dockerfile}
+\item{suffix}{Suffix used to generate the tag and directory name}
 }
 \description{
 Prepare for a build by writing a dockerfile and copying scripts

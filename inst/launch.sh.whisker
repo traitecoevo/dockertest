@@ -21,4 +21,4 @@ case $1 in
 esac
 
 {{{boot2docker}}}
-docker run -v {{{source_dir}}}:/src -it {{{tag}}} $CMD
+docker run {{{volume_map}}} -it {{{tagname}}} $CMD

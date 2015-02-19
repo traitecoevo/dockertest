@@ -1,6 +1,6 @@
 FROM {{{image}}}
 
-RUN apt-get update && apt-get -y install {{{dependencies.system}}}
+RUN apt-get update && apt-get install -y --no-install-recommends {{{dependencies.system}}}
 
 {{{#dependencies.repos}}}
 # More recent copy of install2.r so that we can set repos more easily
@@ -19,4 +19,7 @@ RUN installGithub.r {{{dependencies.github}}}
 RUN r -e 'dockertest:::copy_scripts_dir("/usr/local/bin")'
 
 WORKDIR /root
+
+{{{post_install}}}
+
 CMD bash

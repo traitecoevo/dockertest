@@ -4,15 +4,16 @@
 \alias{build}
 \title{Build a docker container}
 \usage{
-build(path_build = ".", use_cache = TRUE, prepare = TRUE)
+build(suffix, prepare = TRUE, use_cache = TRUE)
 }
 \arguments{
-\item{path_build}{Path to the Dockerfile}
-
-\item{use_cache}{Set to FALSE to skip docker's cache}
+\item{suffix}{Suffix to use;  this will be passed through to
+\code{\link{prepare}} and also used to construct the tag.}
 
 \item{prepare}{Rerun \code{\link{prepare}} before building the
 image?}
+
+\item{use_cache}{Set to FALSE to skip docker's cache}
 }
 \description{
 Build a docker container

@@ -1,4 +1,4 @@
 #!/bin/bash
 set -e
 {{{boot2docker}}}
-docker build -t {{{tag}}} .
+docker build -t {{{tagname}}} .
