@@ -13,6 +13,8 @@ system_requirements_sanitise <- function(reqs) {
                       package="dockertest", mustWork=TRUE)
   dat <- yaml_read(file)
 
+  reqs <- reqs[!is.na(reqs)]
+
   ## Replacements:
   i <- match(names(reqs), names(dat))
   j <- !is.na(i)
@@ -26,12 +28,7 @@ system_requirements_sanitise <- function(reqs) {
     }
     ret
   }
-
-  ret <- sort(unique(unlist(lapply(reqs, f), use.names=FALSE)))
-  ## Drop GNU make entirely:
-  exclude <- "GNU make"
-
-  setdiff(ret, exclude)
+  lapply(reqs, f)
 }
 
 ## This translates from requirements in SystemRequirements (sanitised)
@@ -42,19 +39,34 @@ system_requirements_apt_get <- function(reqs) {
                       package="dockertest",
                       mustWork=TRUE)
   dat <- yaml_read(file)
-  i <- match(reqs, names(dat))
+  i <- match(unlist(reqs), names(dat))
   resolved <- sort(unique(unlist(dat[i], use.names=FALSE)))
-  unresolved <- reqs[is.na(i)]
+  unresolved <- unlist(reqs)[is.na(i)]
+  if (length(unresolved) > 0) {
+    unresolved <- split(names(unresolved), unresolved)
+  }
   list(resolved=resolved, unresolved=unresolved)
 }
 
 ## Try and get requirements from travis:
-system_requirements_travis <- function(path_package=NULL) {
-  path_package <- find_package_root(path_package)
-  travis_yml <- file.path(path_package, ".travis.yml")
+system_requirements_travis <- function(path_project=NULL) {
+  path_project <- find_project_root(path_project)
+  travis_yml <- file.path(path_project, ".travis.yml")
   if (file.exists(travis_yml)) {
     travis <- yaml_read(travis_yml)
     re <- ".*apt-get\\s+install\\s+"
+    to_check <- c(travis$install, travis$before_script)
+    x <- sub(re, "", grep(re, to_check, value=TRUE))
+    unlist(strsplit(x, "\\s+"))
+  }
+}
+
+packages_github_travis <- function(path_project=NULL) {
+  path_project <- find_project_root(path_project)
+  travis_yml <- file.path(path_project, ".travis.yml")
+  if (file.exists(travis_yml)) {
+    travis <- yaml_read(travis_yml)
+    re <- ".*travis-tool\\.sh\\s+github_package\\s+"
     to_check <- c(travis$install, travis$before_script)
     x <- sub(re, "", grep(re, to_check, value=TRUE))
     unlist(strsplit(x, "\\s+"))

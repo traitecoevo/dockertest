@@ -4,17 +4,13 @@
 \alias{dockerfile}
 \title{Write Dockerfile}
 \usage{
-dockerfile(filename = NULL, path_package = NULL)
+dockerfile(filename = NULL)
 }
 \arguments{
 \item{filename}{filename to write to, or \code{NULL} to return the
 contents, invisibly.}
-
-\item{path_package}{Path to the package root.  We'll try and
-locate it if not specificied.}
 }
 \description{
-Write a dockerfile.  Currently system requirements are not at all
-dealt with, which is sad.
+Write a Dockerfile
 }
 

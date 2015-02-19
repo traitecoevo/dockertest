@@ -5,34 +5,6 @@ base_packages <- function() {
   rownames(installed.packages(priority=c("base", "recommended")))
 }
 
-find_package_root <- function(path_package=NULL) {
-  if (is.null(path_package)) {
-    root <- normalizePath("/", mustWork=TRUE)
-    f <- function(path) {
-      if (file.exists(file.path(path, "DESCRIPTION"))) {
-        return(path)
-      }
-      if (normalizePath(path, mustWork=TRUE) == root) {
-        stop("Hit the root without finding a package")
-      }
-      Recall(file.path("..", path))
-    }
-    normalizePath(f("."), mustWork=TRUE)
-  } else {
-    ## Assume we've done this before:
-    path_package
-  }
-}
-
-##' @importFrom devtools as.package
-as_package <- function(path_package=NULL) {
-  as.package(find_package_root(path_package))
-}
-
-package_name <- function(path_package=NULL) {
-  as_package(path_package)$package
-}
-
 package_descriptions <- function(package_names) {
   dat <- lapply(package_names,
                 function(x) suppressWarnings(packageDescription(x)))
@@ -173,7 +145,7 @@ fetch_PACKAGES_github <- function(repos) {
     ret <- NULL
   } else {
     ret <- do.call("rbind", dat)
-    rownames(ret) <- sub("^.+/", "", names(dat))
+    rownames(ret) <- github_package_name(names(dat))
   }
   ret
 }
@@ -195,16 +167,4 @@ description_fields <- function() {
   c("Package",
     "Depends", "Imports", "LinkingTo", "Suggests", "VignetteBuilder",
     "SystemRequirements")
-}
-
-packages_github_travis <- function(path_package=NULL) {
-  path_package <- find_package_root(path_package)
-  travis_yml <- file.path(path_package, ".travis.yml")
-  if (file.exists(travis_yml)) {
-    travis <- yaml_read(travis_yml)
-    re <- ".*travis-tool\\.sh\\s+github_package\\s+"
-    to_check <- c(travis$install, travis$before_script)
-    x <- sub(re, "", grep(re, to_check, value=TRUE))
-    unlist(strsplit(x, "\\s+"))
-  }
 }

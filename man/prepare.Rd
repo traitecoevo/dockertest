@@ -4,12 +4,10 @@
 \alias{prepare}
 \title{Prepare for docker build}
 \usage{
-prepare(path_build = ".", path_package = NULL)
+prepare(path_build = ".")
 }
 \arguments{
 \item{path_build}{Path to the Dockerfile}
-
-\item{path_package}{Path to the package}
 }
 \description{
 Prepare for a build by writing a dockerfile and copying scripts

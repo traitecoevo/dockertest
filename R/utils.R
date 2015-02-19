@@ -34,3 +34,48 @@ user_data_dir <- function() {
   dir.create(path, FALSE, TRUE)
   path
 }
+
+find_project_root <- function(path_project=NULL) {
+  if (is.null(path_project)) {
+    find_file_descend(".git")
+  } else {
+    path_project
+  }
+}
+
+find_package_root <- function(path_package=NULL, path_project=NULL,
+                              error=TRUE) {
+  path_project <- find_project_root(path_project)
+  if (is.null(path_package)) {
+    find_file_descend("DESCRIPTION", path_project, error)
+  } else {
+    path_package
+  }
+}
+
+find_file_descend <- function(target, limit="/", error=TRUE) {
+  root <- normalizePath(limit, mustWork=TRUE)
+  f <- function(path) {
+    if (file.exists(file.path(path, target))) {
+      return(path)
+    }
+    if (normalizePath(path, mustWork=TRUE) == root) {
+      if (error) {
+        stop(sprintf("Hit %s without finding %s", root, target))
+      } else {
+        return(NULL)
+      }
+    }
+    Recall(file.path("..", path))
+  }
+  ret <- f(".")
+  if (!(is.null(ret) && !error)) {
+    ret <- normalizePath(ret, mustWork=TRUE)
+  }
+  ret
+}
+
+## TODO: identify other ones of these and replace
+github_package_name <- function(repo) {
+  sub(".*/", "", repo)
+}
