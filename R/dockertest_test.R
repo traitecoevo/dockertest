@@ -1,7 +1,7 @@
 ##' @importFrom whisker whisker.render
 dockerfile_test <- function(info) {
-  config <- load_config(info$path_project)
-  deps <- dockertest_dependencies(info, config)
+  config <- info$config
+  deps <- dockertest_dependencies(info)
 
   ## Repos needs to go in as a long arg:
   if (!is.null(deps$repos)) {
@@ -17,6 +17,7 @@ dockerfile_test <- function(info) {
 
   template <- system.file("Dockerfile.whisker", package="dockertest",
                           mustWork=TRUE)
+  ## TODO: This should be image_from I think.
   dat <- list(image=config[["image"]], dependencies=deps)
   str <- whisker.render(readLines(template), dat)
   invisible(str)

@@ -4,7 +4,7 @@
 ##' @export
 prepare <- function(info) {
   dir.create(info$path_build, FALSE, TRUE)
-  clone_local(info, load_config())
+  clone_local(info)
 
   if (info$type == "run") {
     prepare_run(info)
@@ -65,8 +65,8 @@ copy_scripts_dir <- function(path) {
   invisible(NULL)
 }
 
-clone_local <- function(info, config) {
-  local_paths <- config$packages$local
+clone_local <- function(info) {
+  local_paths <- info$config$packages$local
   if (length(local_paths) == 0L) {
     return()
   }
@@ -104,8 +104,8 @@ project_info <- function(type, path_project=NULL) {
               path_project=path_project,
               path_package=path_package,
               is_package=is_package)
-
-  ret$tagname <- make_tagname(type, ret)
+  ret$config <- load_config(ret$path_project)
+  ret$tagname <- make_tagname(ret)
   ret$path_build <- sub("^.*/", "", ret$tagname)
 
   ret
@@ -130,7 +130,8 @@ load_config <- function(path_project=NULL) {
   defaults <- list(system_ignore_packages=NULL,
                    system=NULL,
                    packages=list(github=NULL, local=NULL),
-                   image="r-base")
+                   image="r-base",
+                   names=NULL)
   if (file.exists(config_file)) {
     ret <- yaml_read(config_file)
     modifyList(defaults, ret)
@@ -139,8 +140,9 @@ load_config <- function(path_project=NULL) {
   }
 }
 
-add_project_deps <- function(info, config) {
-  config <- add_dockertest_deps(config)
+add_project_deps <- function(info) {
+  info <- add_dockertest_deps(info)
+  config <- info$config
 
   config$packages$github <-
     union(config$packages$github,
@@ -157,23 +159,29 @@ add_project_deps <- function(info, config) {
   }
   config$packages$R <- union(config$packages$R, package_names)
 
-  config
+  info$config <- config
+  info
 }
 
-add_dockertest_deps <- function(config) {
+add_dockertest_deps <- function(info) {
+  config <- info$config
   config$system <- union(config$system,
                          c("curl", "ca-certificates", "git",
                            "libcurl4-openssl-dev", "ssh"))
   config$packages$github <- union(config$packages$github,
                                   "richfitz/dockertest")
   config$packages$R <- union(config$packages$R, "devtools")
-  config
+  info$config <- config
+  info
 }
 
-make_tagname <- function(type, info) {
-  if (is.null(info$tagname)) {
-    sprintf("dockertest/%s-%s", tolower(info$name), type)
-  } else {
+make_tagname <- function(info) {
+  type <- info$type
+  if (!is.null(info$tagname)) {
     info$tagname
+  } else if (!is.null(info$config[["names"]][[type]])) {
+    info$config[["names"]][[type]]
+  } else {
+    sprintf("dockertest/%s-%s", tolower(info$name), tolower(type))
   }
 }

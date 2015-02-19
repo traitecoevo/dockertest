@@ -1,5 +1,6 @@
-dockertest_dependencies <- function(info, config) {
-  config <- add_project_deps(info, config)
+dockertest_dependencies <- function(info) {
+  info <- add_project_deps(info)
+  config <- info$config
 
   packages <- deps(config$packages$R,
                    config$packages$github,
