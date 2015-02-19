@@ -135,6 +135,25 @@ dependencies_packages <- function(package_names, config, path_project) {
   names(deps_github) <- github_package_name(deps_github)
   names(deps_local)  <- local_package_name(deps_local)
 
+  ## If we have local packages, we need to manually add their
+  ## dependencies because the way I install them won't do that
+  ## automatically.  This is complete hack:
+  if (length(deps_local) > 0L) {
+    deps_extra_local <-
+      sort(unique(unlist(lapply(deps_local,
+                                function(x) devtools:::pkg_deps(x)$name))))
+    ## TODO: we could use this to organise the order of local
+    ## installation.
+    exclude <- c(names(deps_local),
+                 names(deps_github),
+                 names(deps_R),
+                 base_packages())
+    deps_extra_local <- setdiff(deps_extra_local, exclude)
+    names(deps_extra_local) <- deps_extra_local
+    deps_R <- c(deps_R, deps_extra_local)
+  }
+
+  ## Then go the other way and exclude packages known from elsewhere:
   drop_github <- names(deps_github) %in% names(deps_local)
   if (any(drop_github)) {
     deps_github <- deps_github[!drop_github]

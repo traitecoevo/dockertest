@@ -37,7 +37,6 @@ package_dependencies_recursive <- function(packages, package_info,
 
   ## TODO: Need to pass in either the configuration or a list of
   ## github repos here.
-
   seen <- base_packages()
   deps <- NULL
   while (length(packages) > 0L) {
