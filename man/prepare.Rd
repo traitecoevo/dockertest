@@ -4,10 +4,7 @@
 \alias{prepare}
 \title{Prepare for docker build}
 \usage{
-prepare(suffix = "-test")
-}
-\arguments{
-\item{suffix}{Suffix used to generate the tag and directory name}
+prepare(info)
 }
 \description{
 Prepare for a build by writing a dockerfile and copying scripts

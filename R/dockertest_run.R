@@ -2,23 +2,26 @@
 ##
 ## Ideally, we'd also allow additional paths to be allowed here, I
 ## think.
-dockerfile_run <- function(info, from_suffix="-test") {
+dockerfile_run <- function(info) {
   ## A post install script.  It's a list because that's going to let
   ## us drop things by making them NULL, and possibly later run more
   ## clever sanitisation of commands.
+  install <- c(sprintf("git clone /src %s", info$name),
+               sprintf("install2.r --error --repos=NULL %s",
+                       info$name),
+               "rm -rf /src")
+
   commands <- c(
     list(),
-    FROM=project_info(from_suffix)$tagname,
+    FROM=project_info("test")$tagname,
     COPY="src /src",
-    RUN=sprintf("git clone /src %s", info$name),
-    RUN=if (info$is_package) sprintf("R CMD INSTALL %s", info$name),
+    RUN=if (info$is_package) docker_join_commands(install, list=FALSE),
     WORKDIR=info$name)
 
   format_docker(commands)
 }
 
-prepare_run <- function(suffix="-run") {
-  info <- project_info(suffix)
+prepare_run <- function(info) {
   prepare_run_clone(info)
   writeLines(dockerfile_run(info),
              file.path(info$path_build, "Dockerfile"))

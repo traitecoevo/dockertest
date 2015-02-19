@@ -41,3 +41,17 @@ docker_build <- function(path, tagname, use_cache=TRUE) {
   }
   message("Created image ", tagname)
 }
+
+docker_join_commands <- function(x, list=TRUE) {
+  if (length(x) <= 1) {
+    unname(x)
+  } else {
+    collapse <- "  \\\n    "
+    if (list) {
+      x <- c("", sort(x)) # also pad
+    } else {
+      collapse <- paste0(collapse, "&& ")
+    }
+    paste(x, collapse=collapse)
+  }
+}

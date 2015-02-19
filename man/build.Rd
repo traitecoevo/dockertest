@@ -4,11 +4,11 @@
 \alias{build}
 \title{Build a docker container}
 \usage{
-build(suffix = "-test", prepare = TRUE, use_cache = TRUE)
+build(type = "test", prepare = TRUE, use_cache = TRUE)
 }
 \arguments{
-\item{suffix}{Suffix to use;  this will be passed through to
-\code{\link{prepare}} and also used to construct the tag.}
+\item{type}{Type of container to build.  Valid options are "test",
+"run" and "production" (last one only for packages).}
 
 \item{prepare}{Rerun \code{\link{prepare}} before building the
 image?}
