@@ -1,93 +1,153 @@
-dependencies <- function(info, config) {
-  ## Determine the *names* of packages that we depend on
-  ## (`package_names`).  This is just the immediate set; not including
-  ## their dependencies yet.
+dockertest_dependencies <- function(info, config) {
+  config <- add_project_deps(info, config)
 
-  ## NOTE: Being sneaky, using hidden function `pkg_deps` to parse
-  ## dependencies; need to write my own for this.
-  path_project <- info$path_project
+  packages <- deps(config$packages$R,
+                   config$packages$github,
+                   config$packages$local)
+
+  package_info <- deps_fetch_package_info(packages$github, packages$local)
+  package_names <- unlist(lapply(packages, names), use.names=FALSE)
+  package_names_all <- deps_recursive(package_names, package_info)$name
+  system <- deps_system(c(package_names, package_names_all),
+                        package_info)
+  repos <- dockertest_repos(info)
+
+  c(list(system=union(system, config$system), repos=repos),
+    packages)
+}
+
+dockertest_repos <- function(info) {
+  repos <- NULL
   if (info$is_package) {
     pkg <- devtools::as.package(info$path_package)
-    package_names <- devtools:::pkg_deps(pkg, dependencies=TRUE)[, "name"]
-    ## Some packages come from different places:
-    if (is.null(pkg$additional_repositories)) {
-      repos <- NULL
-    } else {
+    if (!is.null(pkg$additional_repositories)) {
       repos <- c("http://cran.rstudio.com",
                  strsplit(pkg$additional_repositories, "\\s*,\\s*")[[1]])
     }
-  } else {
-    package_names <- character(0)
-    repos <- NULL
   }
-
-  ## Gather metadata information for all CRAN packages and all
-  ## referenced github packages.  This uses crandb, and I need to work
-  ## out a way of gracefully expiring that information.  The github
-  ## bits are redownloaded each time.
-
-  ## For packages, we take the list of required packages and split
-  ## them up into github and non-github packages, based on config.
-  ## This function may identify additional github packages that are
-  ## needed from .travis.yml and from .dockertest.yml
-  deps_packages <- dependencies_packages(package_names,
-                                         config, path_project)
-
-  ## Recompute the list of package names here, including any ones that
-  ## we added.
-  package_names <- c(deps_packages$R,
-                     names(deps_packages$github),
-                     names(deps_packages$local))
-
-  package_info <- fetch_PACKAGES(deps_packages$github,
-                                 deps_packages$local,
-                                 info$path_build)
-
-  ## System dependencies, based on this.  We use
-  ##   1. github information
-  ##   2. CRAN information
-  ##   3. local package installation information
-  ## in decending order of preference.  We then try to coerce this
-  ## into a set of suitable packages for travis.  Hints in
-  ## .dockertest.yml and .travis.yml may come in helpful here.
-  deps_system <- dependencies_system(package_names, package_info,
-                                     config, path_project)
-
-  c(list(system=deps_system, repos=repos), deps_packages)
+  repos
 }
 
-dependencies_system <- function(package_names, package_info,
-                                config, path_project=NULL) {
-  ## These are required by the bootstrap:
-  dockertest_system <- c("curl", "ca-certificates", "git",
-                         "libcurl4-openssl-dev", "ssh")
+deps <- function(package_names,
+                 github_repos=NULL,
+                 local_paths=NULL,
+                 local_dependencies=TRUE,
+                 keep_devtools=TRUE) {
+  ## First, ensure that we have all the github data we need:
+  deps_github_fetch(github_repos)
 
-  ## Starting with our package dependencies we can identify the full
-  ## list.
+  ## Then get names for our github repos and file repos:
+  names(package_names) <- package_names
+  if (!is.null(github_repos)) {
+    names(github_repos) <- deps_github_package_names(github_repos)
+  }
+  if (!is.null(local_paths)) {
+    names(local_paths) <- deps_local_package_names(local_paths)
+  }
 
-  dat <- package_dependencies_recursive(package_names, package_info)
-  pkgs <- sort(unique(c(package_names, dat$name)))
-  pkgs <- setdiff(pkgs, config[["system_ignore_packages"]])
-  pkgs <- setdiff(pkgs, base_packages())
+  ## Move dependencies of local files into the main set
+  if (local_dependencies && length(local_paths) > 0L) {
+    ## TODO: Do we want to get *all* local dependencies here?
+    deps_extra_local <-
+      sort(unique(unlist(lapply(local_paths, function(x)
+        devtools:::pkg_deps(x, TRUE)$name))))
 
-  ok <- pkgs %in% rownames(package_info)
+    ## Collect all dependencies of
+    exclude <- c(names(local_paths),
+                 names(github_repos),
+                 names(package_names),
+                 base_packages())
+    deps_extra_local <- setdiff(deps_extra_local, exclude)
+    names(deps_extra_local) <- deps_extra_local
+    package_names <- c(package_names, deps_extra_local)
+  }
+
+  ## Then go the other way and exclude packages known from elsewhere:
+  drop_github <- names(github_repos) %in% names(local_paths)
+  if (any(drop_github)) {
+    github_repos <- github_repos[!drop_github]
+  }
+
+  ## However, take care not to drop devtools from the R list.
+  non_R <- c(names(local_paths), names(github_repos))
+  if (keep_devtools) {
+    non_R <- setdiff(non_R, "devtools")
+  }
+  drop_R <- package_names %in% non_R
+  if (any(drop_R)) {
+    package_names <- package_names[!drop_R]
+  }
+
+  list(R=package_names,
+       github=github_repos,
+       local=local_paths)
+}
+
+deps_recursive <- function(package_names, package_info, all=FALSE) {
+  v <- c("Depends", "Imports", "LinkingTo")
+  if (all) {
+    v <- c(v, "Suggests", "VignetteBuilder")
+  }
+
+  join <- function(x) {
+    ret <- do.call("rbind", x)
+    rownames(ret) <- NULL
+    n <- sapply(x, function(x) if (is.null(x)) 0L else nrow(x))
+    ret$package <- rep(names(x), n)
+    ret
+  }
+  join_deps <- function(x) {
+    gsub("\n", " ", paste(na.omit(x[v]), collapse=", "))
+  }
+
+  ## TODO: Need to pass in either the configuration or a list of
+  ## github repos here.
+  seen <- base_packages()
+  deps <- NULL
+  while (length(package_names) > 0L) {
+    i <- package_names %in% rownames(package_info)
+    str <- character(0)
+    ## From PACKAGES:
+    if (any(i)) {
+      str <- c(str, apply(package_info[package_names[i], v, drop=FALSE],
+                          1, join_deps))
+    }
+    ## Offline, or locally installed
+    if (any(!i)) {
+      str <- c(str, sapply(package_descriptions(package_names[!i]),
+                           join_deps))
+    }
+    x <- join(lapply(str, devtools:::parse_deps))
+    seen <- c(seen, package_names)
+    deps <- c(deps, list(x))
+    package_names <- setdiff(x$name, seen)
+  }
+
+  deps_all <- do.call("rbind", deps)
+  deps_all <- deps_all[order(deps_all$name), ]
+  rownames(deps_all) <- NULL
+  deps_all
+}
+
+deps_system <- function(package_names, package_info) {
+  package_names <- sort(setdiff(unique(package_names), base_packages()))
+
+  ok <- package_names %in% rownames(package_info)
   sys_reqs <- character(0)
   if (any(ok)) {
-    sys_reqs <- c(sys_reqs, package_info[pkgs[ok], "SystemRequirements"])
+    sys_reqs <- c(sys_reqs,
+                  package_info[package_names[ok], "SystemRequirements"])
   }
+
   if (any(!ok)) {
     ## Failed to find the requirements in the database, so try
     ## locally:
     f <- function(package_description) {
       ret <- description_field(package_description, "SystemRequirements")
-      if (is.null(ret)) {
-        NA_character_
-      } else {
-        ret
-      }
+      if (is.null(ret)) NA_character_ else ret
     }
-    pkgs_msg <- lapply(pkgs[!ok], package_descriptions)
-    names(pkgs_msg) <- pkgs[!ok]
+    pkgs_msg <- lapply(package_names[!ok], package_descriptions)
+    names(pkgs_msg) <- package_names[!ok]
     sys_reqs <- c(sys_reqs, vapply(pkgs_msg, f, character(1)))
   }
 
@@ -95,11 +155,6 @@ dependencies_system <- function(package_names, package_info,
   sys_reqs <- system_requirements_sanitise(sys_reqs)
   ## And convert those into apt get requirements:
   sys_reqs <- system_requirements_apt_get(sys_reqs)
-  ## Merge in travis' apt get requirements:
-  sys_reqs_travis <- system_requirements_travis(path_project)
-  if (!is.null(sys_reqs_travis)) {
-    sys_reqs$resolved <- sort(unique(c(sys_reqs$resolved, sys_reqs_travis)))
-  }
 
   ## Provide a message (but not a warning) about system requirements
   ## that might be unsatisified.
@@ -114,85 +169,87 @@ dependencies_system <- function(package_names, package_info,
     message(msg)
   }
 
-  sort(unique(c(dockertest_system,
-                sys_reqs$resolved,
-                config[["system"]])))
+  sys_reqs$resolved
 }
 
-dependencies_packages <- function(package_names, config, path_project) {
-  dockertest_packages <- c("devtools", "testthat")
-  ## Start with all the packages:
-  deps_R <- setdiff(union(dockertest_packages, package_names),
-                    base_packages())
-  deps_github <- unique(c("richfitz/dockertest",
-                          packages_github_travis(path_project),
-                          config[["packages"]][["github"]]))
-  deps_local <- config[["packages"]][["local"]]
-
-  ## Now, filter things so that local packages replace github packages
-  ## and github packages replace R (CRAN) packages.
-  names(deps_R)      <- deps_R
-  names(deps_github) <- github_package_name(deps_github)
-  names(deps_local)  <- local_package_name(deps_local)
-
-  ## If we have local packages, we need to manually add their
-  ## dependencies because the way I install them won't do that
-  ## automatically.  This is complete hack:
-  if (length(deps_local) > 0L) {
-    deps_extra_local <-
-      sort(unique(unlist(lapply(deps_local,
-                                function(x) devtools:::pkg_deps(x)$name))))
-    ## TODO: we could use this to organise the order of local
-    ## installation.
-    exclude <- c(names(deps_local),
-                 names(deps_github),
-                 names(deps_R),
-                 base_packages())
-    deps_extra_local <- setdiff(deps_extra_local, exclude)
-    names(deps_extra_local) <- deps_extra_local
-    deps_R <- c(deps_R, deps_extra_local)
+##' @importFrom downloader download
+deps_github_fetch <- function(repos) {
+  dir.create(deps_github_paths(""), FALSE, TRUE)
+  fmt <- "https://raw.githubusercontent.com/%s/master/DESCRIPTION"
+  dat <- list()
+  for (r in repos) {
+    path_r <- deps_github_paths(r)
+    dest_r <- file.path(path_r, "DESCRIPTION")
+    dir.create(path_r, FALSE, TRUE)
+    message("Fetching DESCRIPTION for ", r)
+    ok <- try(downloader::download(sprintf(fmt, r),
+                                   dest_r, quiet=TRUE))
   }
-
-  ## Then go the other way and exclude packages known from elsewhere:
-  drop_github <- names(deps_github) %in% names(deps_local)
-  if (any(drop_github)) {
-    deps_github <- deps_github[!drop_github]
-  }
-
-  ## However, take care not to drop devtools from the R list.
-  non_R <- c(names(deps_local), names(deps_github) )
-  drop_R <- names(deps_R) %in% setdiff(non_R, "devtools")
-  if (any(drop_R)) {
-    deps_R <- deps_R[!drop_R]
-  }
-
-  list(R=deps_R, github=deps_github, local=deps_local)
 }
 
-## No validation here yet.
-load_config <- function(path_project=NULL) {
-  ## We'll look in the local directory and in the package root.
-  config_file_local <- ".dockertest.yml"
-  config_file_package <- file.path(find_project_root(path_project),
-                                   ".dockertest.yml")
-  if (file.exists(config_file_local)) {
-    ## Ideally here we'd merge them, but that's hard to do.
-    if (config_file_local != config_file_package &&
-        file.exists(config_file_package)) {
-      warning("Ignoring root .dockertest.yml", immediate.=TRUE)
+deps_github_paths <- function(repos) {
+  file.path(user_data_dir(), "github", repos)
+}
+
+deps_local_package_names <- function(paths) {
+  description_package_names(paths)
+}
+
+deps_github_package_names <- function(repos) {
+  description_package_names(deps_github_paths(repos))
+}
+
+deps_fetch_package_info <- function(github_repos, local_paths) {
+  dat_crandb <- deps_fetch_package_info_crandb()
+  dat_extra  <- deps_fetch_package_info_extra(github_repos, local_paths)
+  dat <- rbind(dat_crandb, dat_extra)
+  dat[!duplicated(rownames(dat), fromLast=TRUE), , drop=FALSE]
+}
+
+##' @importFrom httr GET content
+##' @importFrom jsonlite fromJSON
+deps_fetch_package_info_crandb <- function(force=FALSE) {
+  dest <- file.path(user_data_dir(), "PACKAGES_crandb.rds")
+  if (force || !file.exists(dest)) {
+    ## From metacran/crandb's DB:
+    api <- "/-/latest"
+    url <- paste0("http://crandb.r-pkg.org", "/", api)
+    message("Downloading crandb/latest - may take a minute")
+    dat_json <- httr::content(httr::GET(url), as="text", encoding="UTF-8")
+    dat <- jsonlite::fromJSON(dat_json)
+
+    ## Convert the nice crandb metadata into the sort that we can
+    ## process from other packages.  We want to get the
+    ## SystemDependencies out of here too.
+    clean <- function(x) {
+      join_field <- function(x) {
+        if (is.null(x)) NA_character_ else paste(names(x), collapse=", ")
+      }
+      to_join <- c("Depends", "Imports", "LinkingTo",
+                   "Suggests", "VignetteBuilder")
+      x <- x[description_fields()]
+      names(x) <- description_fields()
+      x[to_join] <- lapply(x[to_join], join_field)
+      if (is.null(x$SystemRequirements)) {
+        x$SystemRequirements <- NA_character_
+      }
+      unlist(x)
     }
-    config_file <- config_file_local
+
+    ret <- do.call("rbind", lapply(dat, clean))
+    try(saveRDS(ret, dest))
   } else {
-    config_file <- config_file_package
+    ret <- readRDS(dest)
   }
-  defaults <- list(system_ignore_packages=NULL,
-                   system=NULL,
-                   packages=list(github=NULL, local=NULL),
-                   image="r-base")
-  if (file.exists(config_file)) {
-    ret <- yaml_read(config_file)
-    modifyList(defaults, ret)
-  } else {
-    defaults
-  }
+  invisible(ret)
+}
+
+deps_fetch_package_info_extra <- function(github_repos,
+                                     local_paths) {
+  github_paths <- deps_github_paths(github_repos)
+  dat <- lapply(c(github_paths, local_paths),
+                description_dependencies)
+  ret <- do.call("rbind", dat)
+  rownames(ret) <- ret[, "Package"]
+  ret
 }

@@ -4,7 +4,7 @@
 \alias{build}
 \title{Build a docker container}
 \usage{
-build(suffix, prepare = TRUE, use_cache = TRUE)
+build(suffix = "-test", prepare = TRUE, use_cache = TRUE)
 }
 \arguments{
 \item{suffix}{Suffix to use;  this will be passed through to

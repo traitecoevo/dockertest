@@ -4,6 +4,9 @@
 ##' @param suffix Suffix used to generate the tag and directory name
 ##' @export
 prepare <- function(suffix="-test") {
+  info <- project_info(suffix)
+  dir.create(info$path_build, FALSE, TRUE)
+  clone_local(info, load_config())
   ## This hard codes functions and suffixes together in a way that
   ## is particularly unnice.
   if (suffix == "-run") {
@@ -22,48 +25,11 @@ prepare <- function(suffix="-test") {
 ##' image?
 ##' @export
 build <- function(suffix="-test", prepare=TRUE, use_cache=TRUE) {
-  info <- project_info(suffix)
   if (prepare) {
     prepare(suffix)
   }
-  docker_build(info$path_build, info$tagname, use_cache)
-}
-
-##' @importFrom whisker whisker.render
-dockerfile_test <- function(info) {
-  config <- load_config(info$path_project)
-  deps <- dependencies(info, config)
-  p <- function(x) {
-    if (length(x) <= 1) unname(x) else
-    paste(c("", sort(x)), collapse="  \\\n    ")
-  }
-
-  ## Repos needs to go in as a long arg:
-  if (!is.null(deps$repos)) {
-    deps$repos <- sprintf("--repos=%s", deps$repos)
-  }
-  if (!is.null(deps$local)) {
-    deps$local <- paste(file.path("/local", names(deps$local)),
-                        collapse=" ")
-  }
-  deps$system <- p(deps$system)
-  deps$github <- p(deps$github)
-  deps$R      <- p(deps$R)
-  deps$repos  <- p(deps$repos)
-
-  template <- system.file("Dockerfile.whisker", package="dockertest",
-                          mustWork=TRUE)
-  dat <- list(image=config[["image"]], dependencies=deps)
-  str <- whisker.render(readLines(template), dat)
-  invisible(str)
-}
-
-prepare_test <- function(suffix="-test") {
   info <- project_info(suffix)
-  dir.create(info$path_build, FALSE, TRUE)
-  writeLines(dockerfile_test(info),
-             file.path(info$path_build, "Dockerfile"))
-  write_scripts(info)
+  docker_build(info$path_build, info$tagname, use_cache)
 }
 
 write_scripts <- function(info) {
@@ -99,6 +65,25 @@ copy_scripts_dir <- function(path) {
   invisible(NULL)
 }
 
+clone_local <- function(info, config) {
+  local_paths <- config$packages$local
+  if (length(local_paths) == 0L) {
+    return()
+  }
+
+  dest_local <- file.path(info$path_build, ".local")
+  if (file.exists(dest_local)) {
+    unlink(dest_local, recursive=TRUE)
+  }
+  dir.create(dest_local, FALSE, TRUE)
+  add_to_gitignore(dest_local)
+
+  paths_dest <- file.path(dest_local, local_package_name(local_paths))
+  for (i in seq_along(local_paths)) {
+    git_clone(local_paths[[i]], paths_dest[[i]])
+  }
+}
+
 ## Things that should be configurable:
 ##   - name
 ##   - tagname
@@ -123,4 +108,63 @@ project_info <- function(suffix, path_project=NULL) {
        path_package=path_package,
        path_build=path_build,
        is_package=is_package)
+}
+
+## No validation here yet.
+load_config <- function(path_project=NULL) {
+  ## We'll look in the local directory and in the package root.
+  config_file_local <- ".dockertest.yml"
+  config_file_package <- file.path(find_project_root(path_project),
+                                   ".dockertest.yml")
+  if (file.exists(config_file_local)) {
+    ## Ideally here we'd merge them, but that's hard to do.
+    if (config_file_local != config_file_package &&
+        file.exists(config_file_package)) {
+      warning("Ignoring root .dockertest.yml", immediate.=TRUE)
+    }
+    config_file <- config_file_local
+  } else {
+    config_file <- config_file_package
+  }
+  defaults <- list(system_ignore_packages=NULL,
+                   system=NULL,
+                   packages=list(github=NULL, local=NULL),
+                   image="r-base")
+  if (file.exists(config_file)) {
+    ret <- yaml_read(config_file)
+    modifyList(defaults, ret)
+  } else {
+    defaults
+  }
+}
+
+add_project_deps <- function(info, config) {
+  config <- add_dockertest_deps(config)
+
+  config$packages$github <-
+    union(config$packages$github,
+          packages_github_travis(info$path_project))
+  config$system <-
+    union(config$system,
+          system_requirements_travis(info$path_project))
+
+  if (info$is_package) {
+    pkg <- devtools::as.package(info$path_package)
+    package_names <- devtools:::pkg_deps(pkg, dependencies=TRUE)[, "name"]
+  } else {
+    package_names <- character(0)
+  }
+  config$packages$R <- union(config$packages$R, package_names)
+
+  config
+}
+
+add_dockertest_deps <- function(config) {
+  config$system <- union(config$system,
+                         c("curl", "ca-certificates", "git",
+                           "libcurl4-openssl-dev", "ssh"))
+  config$packages$github <- union(config$packages$github,
+                                  "richfitz/dockertest")
+  config$packages$R <- union(config$packages$R, "devtools")
+  config
 }
