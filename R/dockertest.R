@@ -4,14 +4,12 @@
 ##' @param suffix Suffix used to generate the tag and directory name
 ##' @export
 prepare <- function(suffix="-test") {
-  if (prepare) {
-    ## This hard codes functions and suffixes together in a way that
-    ## is particularly unnice.
-    if (suffix == "-run") {
-      prepare_run(suffix)
-    } else {
-      prepare_test(suffix)
-    }
+  ## This hard codes functions and suffixes together in a way that
+  ## is particularly unnice.
+  if (suffix == "-run") {
+    prepare_run(suffix)
+  } else {
+    prepare_test(suffix)
   }
 }
 
