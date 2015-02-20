@@ -42,7 +42,7 @@ docker_build <- function(path, tagname, use_cache=TRUE) {
   message("Created image ", tagname)
 }
 
-docker_join_commands <- function(x, list=TRUE) {
+docker_join <- function(x, list=TRUE) {
   if (length(x) <= 1) {
     unname(x)
   } else {
@@ -54,4 +54,31 @@ docker_join_commands <- function(x, list=TRUE) {
     }
     paste(x, collapse=collapse)
   }
+}
+
+docker_apt_get_install <- function(packages) {
+  if (length(packages) == 0L) {
+    return(NULL)
+  }
+  cmd <- c(paste("apt-get update && apt-get install -y --no-install-recommends",
+                 docker_join(packages, list=TRUE)),
+           "apt-get clean")
+  # "rm -rf /var/lib/apt/lists/")
+  docker_RUN(cmd)
+}
+docker_COPY <- function(from, to) {
+  list(COPY=paste(from, to))
+}
+docker_RUN <- function(commands) {
+  if (is.null(commands)) {
+    NULL
+  } else {
+    list(RUN=docker_join(commands, list=FALSE))
+  }
+}
+docker_FROM <- function(image) {
+  list(FROM=image)
+}
+docker_WORKDIR <- function(path) {
+  list(WORKDIR=path)
 }

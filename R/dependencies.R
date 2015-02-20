@@ -1,5 +1,4 @@
 dockertest_dependencies <- function(info) {
-  info <- add_project_deps(info)
   config <- info$config
 
   packages <- deps(config$packages$R,
@@ -11,13 +10,13 @@ dockertest_dependencies <- function(info) {
   package_names_all <- deps_recursive(package_names, package_info)$name
   system <- deps_system(c(package_names, package_names_all),
                         package_info)
-  repos <- dockertest_repos(info)
+  repos <- deps_repos(info)
 
   c(list(system=union(system, config$system), repos=repos),
     packages)
 }
 
-dockertest_repos <- function(info) {
+deps_repos <- function(info) {
   repos <- NULL
   if (info$is_package) {
     pkg <- devtools::as.package(info$path_package)
@@ -165,7 +164,7 @@ deps_system <- function(package_names, package_info) {
     msg <- paste(sprintf("\t- %s: %s", unresolved_name, unresolved_pkg),
                  collapse="\n")
     msg <- paste("Unresolved SystemRequirements:", msg,
-                 "Suppress with .dockertest.yml:system_ignore_packages",
+                 "Suppress with dockertest.yml:system_ignore_packages",
                  sep="\n")
     message(msg)
   }

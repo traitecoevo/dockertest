@@ -103,13 +103,20 @@ add_to_gitignore <- function(path) {
   }
 }
 
-git_clone <- function(repo, dest, quiet=FALSE) {
+git_clone <- function(repo, dest, quiet=FALSE, shallow=FALSE) {
   if (quiet) {
     stderr <- stdout <- FALSE
   } else {
     stderr <- stdout <- ""
   }
-  ok <- system2(Sys.which("git"), c("clone", repo, dest),
+
+  if (shallow) {
+    args <- c("clone", "--depth=1", "--single-branch")
+  } else {
+    args <- c("clone", repo, dest)
+  }
+
+  ok <- system2(Sys.which("git"), args,
                 stderr=stderr, stdout=stdout)
   if (ok != 0L) {
     stop("Error cloning ", repo, " to ", dest)

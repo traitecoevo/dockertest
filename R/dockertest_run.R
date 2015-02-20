@@ -6,22 +6,21 @@ dockerfile_run <- function(info) {
   ## A post install script.  It's a list because that's going to let
   ## us drop things by making them NULL, and possibly later run more
   ## clever sanitisation of commands.
-  install <- c(sprintf("git clone /src %s", info$name),
-               sprintf("install2.r --error --repos=NULL %s",
-                       info$name),
-               "rm -rf /src")
+  install_package <- sprintf("install2.r --error --repos=NULL %s",
+                             info$name)
 
   commands <- c(
     list(),
-    FROM=project_info("test")$tagname,
-    COPY="src /src",
-    RUN=if (info$is_package) docker_join_commands(install, list=FALSE),
-    WORKDIR=info$name)
+    docker_FROM(project_info("test")$tagname),
+    docker_COPY("src", info$name),
+    if (info$is_package) docker_RUN(install_package)
+  )
 
   format_docker(commands)
 }
 
 prepare_run <- function(info) {
+  dir.create(info$path_build, FALSE, TRUE)
   prepare_run_clone(info)
   writeLines(dockerfile_run(info),
              file.path(info$path_build, "Dockerfile"))

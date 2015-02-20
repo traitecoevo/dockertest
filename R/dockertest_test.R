@@ -1,6 +1,10 @@
 ##' @importFrom whisker whisker.render
-dockerfile_test <- function(info) {
+dockerfile_test <- function(info, include_dockertest_deps=TRUE) {
   config <- info$config
+  ## Add dockertest-specific dependencies here:
+  if (include_dockertest_deps) {
+    info <- add_project_deps(info)
+  }
   deps <- dockertest_dependencies(info)
 
   ## Repos needs to go in as a long arg:
@@ -12,7 +16,7 @@ dockerfile_test <- function(info) {
                         collapse=" ")
   }
   for (i in c("system", "github", "R", "repos")) {
-    deps[[i]] <- docker_join_commands(deps[[i]], TRUE)
+    deps[[i]] <- docker_join(deps[[i]], TRUE)
   }
 
   template <- system.file("Dockerfile.whisker", package="dockertest",

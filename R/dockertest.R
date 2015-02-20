@@ -1,20 +1,3 @@
-##' Prepare for a build by writing a dockerfile and copying scripts
-##' into the build directory.
-##' @title Prepare for docker build
-##' @export
-prepare <- function(info) {
-  dir.create(info$path_build, FALSE, TRUE)
-  clone_local(info)
-
-  if (info$type == "run") {
-    prepare_run(info)
-  } else if (info$type == "production") {
-    prepare_production(info)
-  } else {
-    prepare_test(info)
-  }
-}
-
 ##' Build a docker container
 ##' @title Build a docker container
 ##' @param type Type of container to build.  Valid options are "test",
@@ -31,6 +14,37 @@ build <- function(type="test", prepare=TRUE, use_cache=TRUE) {
   docker_build(info$path_build, info$tagname, use_cache)
 }
 
+##' Prepare for a build by writing a dockerfile and copying scripts
+##' into the build directory.
+##' @title Prepare for docker build
+##' @param info Result of \code{project_info}, which is not exported,
+##' so that's a bit mean.
+##' @export
+prepare <- function(info) {
+  dir.create(info$path_build, FALSE, TRUE)
+  clone_local(info)
+
+  if (info$type == "run") {
+    prepare_run(info)
+  } else if (info$type == "production") {
+    prepare_production(info)
+  } else {
+    prepare_test(info)
+  }
+}
+
+prepare_general <- function(info) {
+  ## TODO: Really, we should clone unless info$clone is FALSE, or
+  ## something.
+  dir.create(info$path_build, FALSE, TRUE)
+  if (info$clone) {
+    prepare_run_clone(info)
+  }
+  writeLines(dockerfile_test(info),
+             file.path(info$path_build, "Dockerfile"))
+  write_scripts(info)
+}
+
 write_scripts <- function(info) {
   boot2docker_str <-
     if (is_mac()) "$(boot2docker shellinit 2> /dev/null)" else ""
@@ -38,7 +52,7 @@ write_scripts <- function(info) {
   ## TODO: This is temporary for now at least.
   ## TODO: as in build(), assume that we're testing unless explicitly
   ## run.
-  ## TODO: Request this in the info.
+  ## TODO: Request this in the info (see config$source now?)
   if (info$type == "test") {
     volume_map <- sprintf("-v %s:/src", info$path_project)
   } else {
@@ -71,7 +85,7 @@ clone_local <- function(info) {
     return()
   }
 
-  dest_local <- file.path(info$path_build, ".local")
+  dest_local <- file.path(info$path_build, "local")
   if (file.exists(dest_local)) {
     unlink(dest_local, recursive=TRUE)
   }
@@ -114,19 +128,7 @@ project_info <- function(type, path_project=NULL) {
 ## No validation here yet.
 load_config <- function(path_project=NULL) {
   ## We'll look in the local directory and in the package root.
-  config_file_local <- ".dockertest.yml"
-  config_file_package <- file.path(find_project_root(path_project),
-                                   ".dockertest.yml")
-  if (file.exists(config_file_local)) {
-    ## Ideally here we'd merge them, but that's hard to do.
-    if (config_file_local != config_file_package &&
-        file.exists(config_file_package)) {
-      warning("Ignoring root .dockertest.yml", immediate.=TRUE)
-    }
-    config_file <- config_file_local
-  } else {
-    config_file <- config_file_package
-  }
+  config_file <- "dockertest.yml"
   defaults <- list(system_ignore_packages=NULL,
                    system=NULL,
                    packages=list(github=NULL, local=NULL),

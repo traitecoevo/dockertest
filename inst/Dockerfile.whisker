@@ -21,7 +21,7 @@ RUN r -e 'dockertest:::copy_scripts_dir("/usr/local/bin")'
 
 {{{#dependencies.local}}}
 RUN mkdir /local
-COPY .local /local
+COPY local /local
 # Note these are *not* sorted in case there are interdependencies.
 RUN install2.r --repos=NULL --error {{{dependencies.local}}} \
   && rm -rf /local

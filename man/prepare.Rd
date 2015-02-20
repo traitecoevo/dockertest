@@ -6,6 +6,10 @@
 \usage{
 prepare(info)
 }
+\arguments{
+\item{info}{Result of \code{project_info}, which is not exported,
+so that's a bit mean.}
+}
 \description{
 Prepare for a build by writing a dockerfile and copying scripts
 into the build directory.
