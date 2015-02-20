@@ -25,7 +25,7 @@ build_remake <- function(target="clean", prepare=TRUE, use_cache=TRUE) {
 ##' @export
 prepare_remake <- function(info) {
   dir.create(info$path_build, FALSE, TRUE)
-  if (is.null(info$config$source)) {
+  if (is.null(info$remake_target) && is.null(info$config$source)) {
     prepare_run_clone(info)
   }
   writeLines(dockerfile_remake(info),
@@ -37,16 +37,18 @@ prepare_remake <- function(info) {
 }
 
 dockerfile_remake <- function(info) {
+  if (is.null(info$remake_target)) {
+    dockerfile_remake_clean(info)
+  } else {
+    dockerfile_remake_run(info)
+  }
+}
+
+dockerfile_remake_clean <- function(info) {
   if (is.null(info$path_remake)) {
     workdir <- info$name
   } else {
     workdir <- file.path(info$name, info$path_remake)
-  }
-
-  if (is.null(info$remake_target)) {
-    make <- NULL
-  } else {
-    make <- sprintf("r -e 'remake::make(\"%s\")'", info$remake_target)
   }
 
   if (is.null(info$config$source)) {
@@ -55,20 +57,25 @@ dockerfile_remake <- function(info) {
     clone <- docker_RUN(sprintf("git clone %s %s",
                                 info$config$source, info$name))
   }
-
-  ## NOTE: There are really two options here; we could make standalone
-  ## things  (that's what I've opted to do here) or we could make
-  ## containers that build the project work `FROM` the base
-  ## container.  Either way docker will reuse things
   commands <- c(
     list(),
     docker_FROM("richfitz/remake"),
     docker_apt_get_install(info$config$system),
     clone,
     docker_WORKDIR(workdir),
-    docker_RUN("r -e 'remake::install_missing_packages()'"),
-    if (!is.null(make)) docker_RUN(make)
+    docker_RUN("r -e 'remake::install_missing_packages()'")
   )
+  format_docker(commands)
+}
+
+## Much simpler:
+dockerfile_remake_run <- function(info) {
+  image <- project_info("clean")$tagname
+  target <- info$remake_target
+  commands <- c(
+    list(),
+    docker_FROM(image),
+    docker_RUN(sprintf("r -e 'remake::make(\"%s\")'", target)))
   format_docker(commands)
 }
 
