@@ -25,7 +25,7 @@ build_remake <- function(target="clean", prepare=TRUE, use_cache=TRUE) {
 ##' @export
 prepare_remake <- function(info) {
   dir.create(info$path_build, FALSE, TRUE)
-  if (!is.null(info$config$source)) {
+  if (is.null(info$config$source)) {
     prepare_run_clone(info)
   }
   writeLines(dockerfile_remake(info),
@@ -87,9 +87,6 @@ project_info_remake <- function(target="clean", remake_file="remake.yml") {
   ## TODO: Also misses target-specific packages.
   dat <- yaml_read(remake_file_full)
 
-  remake_sources <- file.path(path_remake, "remake_sources.yml")
-  sources <- remake:::read_remake_packages(remake_sources)
-
   ## This gives us most of what we need.
 
   ## First, we set the image to be against remake.
@@ -97,14 +94,29 @@ project_info_remake <- function(target="clean", remake_file="remake.yml") {
 
   ## Then, we add packages (need to process the github ones later?)
   info$config$packages$R <- dat$packages
+
+  remake_sources <- file.path(path_remake, "remake_sources.yml")
+  sources <- remake:::read_remake_packages(remake_sources)
   if (!is.null(sources)) {
-    stop("Not yet handled")
+    ok <- vapply(sources, function(x) x$source == "github",
+                 logical(1))
+    if (!all(ok)) {
+      stop("Non-github sources not handled yet")
+    }
+    info$config$packages$github <-
+      unname(vapply(sources[ok], function(x) x$repo, character(1)))
+  }
+
+  ## Target-specific packages:
+  packages_target <- unlist(lapply(dat$targets, function(x) x$packages))
+  if (length(packages_target) > 0L) {
+    info$config$packages$R <- union(info$config$packages$R,
+                                    packages_target)
   }
 
   ## Need to get system deps here, still, but only because we want
   ## *system* information; process that.
   info$config$system <- dockertest_dependencies(info)$system
-  info$path_remake <- path_remake
 
   ## Path to remake, relative to that of the *project*:
   if (path_remake == info$path_project) {
