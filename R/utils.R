@@ -111,7 +111,7 @@ git_clone <- function(repo, dest, quiet=FALSE, shallow=FALSE) {
   }
 
   if (shallow) {
-    args <- c("clone", "--depth=1", "--single-branch")
+    args <- c("clone", "--depth=1", "--single-branch", repo, dest)
   } else {
     args <- c("clone", repo, dest)
   }

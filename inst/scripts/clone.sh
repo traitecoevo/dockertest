@@ -1,5 +1,5 @@
 #!/bin/sh
-SOURCE_DIR=src
-if [ ! -d $SOURCE_DIR ]; then
-    git clone --depth 1 file:///$SOURCE_DIR $SOURCE_DIR
+SOURCE_DIR=$1
+if [ -d /src/.git ]; then
+    test -d $SOURCE_DIR/.git || git clone --depth 1 file:///src $SOURCE_DIR
 fi

@@ -1,10 +1,8 @@
 #!/bin/sh
-clone.sh
-cd src/tests/testthat
-
-cat >> .Rprofile <<EOF
+cat >> ~/.Rprofile <<EOF
 library(testthat)
-devtools::load_all("../../")
+devtools::load_all()
+setwd("tests/testthat")
 local({
   for (f in list.files(".", pattern="^helper")) {
     message("Reading ", f)

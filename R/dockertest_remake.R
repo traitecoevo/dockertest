@@ -11,8 +11,12 @@
 ##' @export
 build_remake <- function(target="clean", prepare=TRUE, use_cache=TRUE) {
   info <- project_info_remake(target)
-  prepare_remake(info)
-  docker_build(info$path_build, info$tagname, TRUE)
+  if (prepare) {
+    prepare_remake(info)
+  }
+  dockerfile <- file.path(info$path_build, "Dockerfile")
+  path <- if (info$inplace) info$path_project else "."
+  docker_build(path, dockerfile, info$tagname, use_cache)
 }
 
 ##' Prepare for a build by writing a dockerfile and copying scripts
@@ -25,15 +29,13 @@ build_remake <- function(target="clean", prepare=TRUE, use_cache=TRUE) {
 ##' @export
 prepare_remake <- function(info) {
   dir.create(info$path_build, FALSE, TRUE)
-  if (is.null(info$remake_target) && is.null(info$config$source)) {
-    prepare_run_clone(info)
+  ## clone_local(info) # can't use at present
+  if (!info$inplace) {
+    clone_self(info)
   }
-  writeLines(dockerfile_remake(info),
-             file.path(info$path_build, "Dockerfile"))
-  ## TODO: I need to write different scripts though, with different
-  ## targets.  We'd ideally have a make target, but that should leave
-  ## you in R or bash after running...
-  write_scripts(info)
+  format_docker(dockerfile_remake(info), # different to prepare()
+                file.path(info$path_build, "Dockerfile"))
+  write_launch_script(info)
 }
 
 dockerfile_remake <- function(info) {
@@ -51,32 +53,25 @@ dockerfile_remake_clean <- function(info) {
     workdir <- file.path(info$name, info$path_remake)
   }
 
-  if (is.null(info$config$source)) {
-    clone <- docker_COPY("src", info$name)
-  } else {
-    clone <- docker_RUN(sprintf("git clone %s %s",
-                                info$config$source, info$name))
-  }
-  commands <- c(
-    list(),
+  path <- file.path("/root", info$name)
+  copy_sources <- docker_copy_sources(path,
+                                      info$local_filesystem,
+                                      info$path_self)
+  c(list(),
     docker_FROM("richfitz/remake"),
     docker_apt_get_install(info$config$system),
-    clone,
+    docker_r('remake::install_remake("/usr/local/bin")'),
+    copy_sources,
     docker_WORKDIR(workdir),
-    docker_RUN("r -e 'remake::install_missing_packages()'")
-  )
-  format_docker(commands)
+    docker_r("remake::install_missing_packages()"),
+    docker_CMD("bash"))
 }
 
 ## Much simpler:
 dockerfile_remake_run <- function(info) {
-  image <- project_info("clean")$tagname
-  target <- info$remake_target
-  commands <- c(
-    list(),
-    docker_FROM(image),
-    docker_RUN(sprintf("r -e 'remake::make(\"%s\")'", target)))
-  format_docker(commands)
+  c(list(),
+    docker_FROM(project_info("clean")$tagname),
+    docker_RUN(paste("remake", info$remake_target)))
 }
 
 project_info_remake <- function(target="clean", remake_file="remake.yml") {
@@ -129,6 +124,7 @@ project_info_remake <- function(target="clean", remake_file="remake.yml") {
   if (path_remake == info$path_project) {
     info$path_remake <- NULL
   } else {
+    ## TODO: This is a *path difference*, see project_info()
     rel <- substr(path_remake,
                   nchar(info$path_project) + 1L, nchar(path_remake))
     ## I believe that there is never a trailing slash so we'd be
@@ -136,6 +132,7 @@ project_info_remake <- function(target="clean", remake_file="remake.yml") {
     info$path_remake <- sub("^/", "", rel)
   }
 
+  class(info) <- c("dockertest_remake", class(info))
   info
 }
 

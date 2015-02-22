@@ -47,10 +47,12 @@ deps <- function(package_names,
 
   ## Move dependencies of local files into the main set
   if (local_dependencies && length(local_paths) > 0L) {
-    ## TODO: Do we want to get *all* local dependencies here?
+    ## TODO: Do we want to get *all* local dependencies here?  It can
+    ## cause weird problems (e.g., depending on remake means we need
+    ## to list remake sources).
     deps_extra_local <-
       sort(unique(unlist(lapply(local_paths, function(x)
-        devtools:::pkg_deps(x, TRUE)$name))))
+        devtools:::pkg_deps(x)$name))))
 
     ## Collect all dependencies of
     exclude <- c(names(local_paths),
@@ -173,13 +175,21 @@ deps_system <- function(package_names, package_info) {
 }
 
 ##' @importFrom downloader download
-deps_github_fetch <- function(repos) {
+deps_github_fetch <- function(repos, expire=1) {
   dir.create(deps_github_paths(""), FALSE, TRUE)
   fmt <- "https://raw.githubusercontent.com/%s/master/DESCRIPTION"
   dat <- list()
   for (r in repos) {
     path_r <- deps_github_paths(r)
     dest_r <- file.path(path_r, "DESCRIPTION")
+    if (file.exists(dest_r)) {
+      ## Hardcoded expiry of 1 day for now.
+      dt <- difftime(Sys.time(), file.info(dest_r)[["ctime"]],
+                     units="days")
+      if (as.numeric(dt) < expire) {
+        next
+      }
+    }
     dir.create(path_r, FALSE, TRUE)
     message("Fetching DESCRIPTION for ", r)
     ok <- try(downloader::download(sprintf(fmt, r),
@@ -210,6 +220,7 @@ deps_fetch_package_info <- function(github_repos, local_paths) {
 ##' @importFrom jsonlite fromJSON
 deps_fetch_package_info_crandb <- function(force=FALSE) {
   dest <- file.path(user_data_dir(), "PACKAGES_crandb.rds")
+  ## TODO: expire this.  Possibly don't return it.
   if (force || !file.exists(dest)) {
     ## From metacran/crandb's DB:
     api <- "/-/latest"
