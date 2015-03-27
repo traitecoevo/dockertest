@@ -2,7 +2,7 @@
 
 Proof of concept of generating Dockerfiles from R packages and other R projects, and using them to run tests.
 
-Build a docker container that contains all your package dependencies, and use this to test installation, tests and `R CMD check` within, independent of your system.  This gives the isolated environment of [travis](https://travis.org) with a much faster cycle time (no installation time, potentially no slower than running the tests in the package directory).
+Build a docker container that contains all your package dependencies, and use this to test installation, tests and `R CMD check` within, independent of your system.  This gives the isolated environment of [travis](https://travis-ci.org) with a much faster cycle time (no installation time, potentially no slower than running the tests in the package directory).
 
 ## Packages
 
