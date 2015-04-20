@@ -19,3 +19,10 @@ rPython:
   # SystemRequirements:   Python (>= 2.7) and Python headers and libraries
   #                       (See the INSTALL file)
   - python-dev
+
+RcppRedis:
+  # SystemRequirements:   The hiredis library (eg via package
+  #                       libhiredis-dev on Debian/Ubuntu, hiredis-devel on
+  #                       Fedora/RedHat, or directly from source from
+  #                       https://github.com/redis/hiredis)
+  - libhiredis-dev

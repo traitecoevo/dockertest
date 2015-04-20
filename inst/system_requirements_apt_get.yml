@@ -16,3 +16,4 @@ perl: ~ # installed already
 python-dev: python-dev
 zlib: zlib1g-dev
 GNU make: ~ # installed already
+libhiredis-dev: libhiredis-dev
