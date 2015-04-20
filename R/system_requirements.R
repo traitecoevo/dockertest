@@ -8,11 +8,14 @@
 ## parsed pretty easily by eye.  I've done a few in
 ## system_requirements_sanitise.yml but these are just a handful that
 ## I saw.
-system_requirements_sanitise <- function(reqs) {
+system_requirements_sanitise <- function(reqs, ignore=NULL) {
   file <- system.file("system_requirements_sanitise.yml",
                       package="dockertest", mustWork=TRUE)
   dat <- yaml_read(file)
 
+  ## Drop ignored packages:
+  reqs <- reqs[setdiff(names(reqs), ignore)]
+  ## And packages that are ignored
   reqs <- reqs[!is.na(reqs)]
 
   ## Replacements:

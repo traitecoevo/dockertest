@@ -154,7 +154,8 @@ deps_system <- function(package_names, package_info) {
   }
 
   ## Convert impossible to understand requirements:
-  sys_reqs <- system_requirements_sanitise(sys_reqs)
+  sys_reqs <- system_requirements_sanitise(sys_reqs,
+                                           info$config$system_ignore_packages)
   ## And convert those into apt get requirements:
   sys_reqs <- system_requirements_apt_get(sys_reqs)
 
