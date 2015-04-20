@@ -103,7 +103,9 @@ clone_self <- function(info) {
   dir.create(dest_self, FALSE, TRUE)
   add_to_gitignore(dest_self)
   git_clone(info$path_project, dest_self)
-  unlink(file.path(dest_self, ".git"), TRUE)
+  if (!isTRUE(info$config$keep_git)) {
+    unlink(file.path(dest_self, ".git"), TRUE)
+  }
 }
 
 ## Things that should be configurable:
@@ -129,7 +131,8 @@ project_info <- function(type, path_project=NULL) {
               path_project=path_project,
               path_package=path_package,
               is_package=is_package,
-              local_filesystem=type == "test")
+              local_filesystem=type == "test",
+              keep_git=FALSE)
   ret$install_package <- is_package && type != "test"
 
   ret$config <- load_config(ret$path_project)
