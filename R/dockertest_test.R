@@ -34,14 +34,61 @@ dockerfile_dockertest <- function(info) {
     local_paths <- file.path(info$path_local, names(deps$local))
   }
 
+  extra <- process_extra_commands(info)
+
   c(list(),
     docker_FROM(info$config$image),
     docker_apt_get_install(deps$system),
+    extra$system,
     docker_install2(deps$R, deps$repos),
+    extra$R,
     docker_install_github(deps$github),
+    extra$github,
     ## Local paths are relative to the build directory.
     docker_install_local(local_paths),
+    extra$local,
     post_install,
     docker_WORKDIR(workdir),
+    extra$workdir,
     docker_CMD("bash"))
+}
+
+## There are may be multiple commands, and those commands might be
+## executed after different other commands:
+process_extra_commands <- function(info) {
+  cmds <- info$config$commands
+
+  ret <- list(system=NULL, R=NULL, github=NULL, local=NULL, workdir=NULL)
+  if (length(cmds) > 0L) {
+    when <- lapply(cmds, "[[", "after")
+    when[vapply(when, is.null, logical(1))] <- "github"
+    when <- vapply(when, identity, character(1))
+
+    err <- setdiff(unique(when), names(ret))
+    if (length(err) > 0L) {
+      stop("Unknown timing: ", paste(err, collapse=", "))
+    }
+
+    cmds <- split(vapply(cmds, function(x) x$command, character(1)), when)
+
+    for (i in names(cmds)) {
+      ## Add trailing backslashes where they look necessary:
+      add_backslash <- function(x) {
+        gsub("([^\\])([^\\ ]*)\n", "\\1\\2 \\\\\n",
+             sub("\n$", "", x))
+      }
+      split_command <- function(x) {
+        re <- "([A-Z]+)\\s+(.+)$"
+        if (!all(grepl(re, x))) {
+          stop("Does not look like a docker command")
+        }
+        cmd <- sub(re, "\\1", x)
+        value <- sub(re, "\\2", x)
+        names(value) <- cmd
+        value
+      }
+      ret[[i]] <- split_command(add_backslash(cmds[[i]]))
+    }
+  }
+  ret
 }
