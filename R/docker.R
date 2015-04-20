@@ -123,12 +123,15 @@ docker_install_local <- function(local_paths) {
   packages_local <- docker_join(local_docker, list=TRUE, sort=FALSE)
   c(list(),
     docker_COPY(local_dir, "/local"),
-    docker_RUN(c(paste("install2.r --repos=NULL --error", packages_local),
+    docker_RUN(c(paste("R CMD INSTALL", packages_local),
                  "rm -rf /local")))
 }
 
-docker_copy_sources <- function(path, local_filesystem, path_self=".") {
-  if (local_filesystem) {
+docker_copy_sources <- function(path, local_filesystem, path_self=".",
+                                deps_only=FALSE) {
+  if (deps_only) {
+    copy_sources <- NULL
+  } else if (local_filesystem) {
     str   <- paste("clone.sh", path)
     str_r <- sprintf("system('%s')", str)
     cmd <- c(paste0("mkdir ", path),

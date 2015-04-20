@@ -6,7 +6,8 @@ dockerfile_dockertest <- function(info) {
   path <- file.path("/root", info$name)
   copy_sources <- docker_copy_sources(path,
                                       info$local_filesystem,
-                                      info$path_self)
+                                      info$path_self,
+                                      info$config$deps_only)
   copy_scripts <- docker_r('dockertest:::copy_scripts_dir("/usr/local/bin")')
 
   if (info$install_package) {

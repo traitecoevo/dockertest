@@ -178,7 +178,8 @@ load_config <- function(path_project=NULL) {
                    packages=list(github=NULL, local=NULL),
                    image="r-base",
                    names=NULL,
-                   inplace=FALSE)
+                   inplace=FALSE,
+                   deps_only=TRUE)
   if (file.exists(config_file)) {
     ret <- yaml_read(config_file)
     modifyList(defaults, ret)
