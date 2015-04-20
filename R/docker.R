@@ -110,7 +110,8 @@ docker_install_github <- function(github_repos) {
   if (is.null(github_repos)) {
     return(NULL)
   }
-  docker_RUN(paste0("installGithub.r ", docker_join(github_repos, list=TRUE)))
+  docker_RUN(paste0("installGithub.r ",
+                    docker_join(github_repos, list=TRUE, sort=FALSE)))
 }
 
 docker_install_local <- function(local_paths) {
