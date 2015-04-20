@@ -9,7 +9,7 @@ dockertest_dependencies <- function(info) {
   package_names <- unlist(lapply(packages, names), use.names=FALSE)
   package_names_all <- deps_recursive(package_names, package_info)$name
   system <- deps_system(c(package_names, package_names_all),
-                        package_info)
+                        package_info, info)
   repos <- deps_repos(info)
 
   c(list(system=union(system, config$system), repos=repos),
@@ -131,7 +131,7 @@ deps_recursive <- function(package_names, package_info, all=FALSE) {
   deps_all
 }
 
-deps_system <- function(package_names, package_info) {
+deps_system <- function(package_names, package_info, info) {
   package_names <- sort(setdiff(unique(package_names), base_packages()))
 
   ok <- package_names %in% rownames(package_info)
