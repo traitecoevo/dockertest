@@ -187,14 +187,17 @@ load_config <- function(path_project=NULL) {
                    deps_only=TRUE)
   if (file.exists(config_file)) {
     ret <- yaml_read(config_file)
-    modifyList(defaults, ret)
+    ret <- modifyList(defaults, ret)
   } else {
-    defaults
+    ret <- defaults
   }
+  ## Always include the "dockertest_bootstrap" module which includes
+  ## dependencies needed to get started...
+  ret$modules <- union("dockertest_bootstrap", ret$modules)
+  ret
 }
 
 add_project_deps <- function(info) {
-  info <- add_dockertest_deps(info)
   config <- info$config
 
   config$packages$github <-
@@ -212,20 +215,6 @@ add_project_deps <- function(info) {
   }
   config$packages$R <- union(config$packages$R, package_names)
 
-  info$config <- config
-  info
-}
-
-## These are the dependencies that dockertest needs to bootstrap
-## everything, ad added to the config list
-add_dockertest_deps <- function(info) {
-  config <- info$config
-  config$system <- union(config$system,
-                         c("curl", "ca-certificates", "git",
-                           "libcurl4-openssl-dev", "ssh"))
-  config$packages$github <- union(config$packages$github,
-                                  "richfitz/dockertest")
-  config$packages$R <- union(config$packages$R, "devtools")
   info$config <- config
   info
 }

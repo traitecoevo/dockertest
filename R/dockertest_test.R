@@ -8,14 +8,12 @@ dockerfile_dockertest <- function(info) {
                                       info$local_filesystem,
                                       info$path_self,
                                       info$config$deps_only)
-  copy_scripts <- docker_r('dockertest:::copy_scripts_dir("/usr/local/bin")')
 
   if (info$install_package) {
     if (!info$is_package) {
       stop("Makes no sense")
     }
     post_install <- c(list(),
-                      copy_scripts,
                       copy_sources,
                       docker_RUN(c(paste("R CMD INSTALL", path),
                                    paste("rm -rf", path))),
@@ -23,7 +21,6 @@ dockerfile_dockertest <- function(info) {
     workdir <- "/root"
   } else {
     post_install <- c(list(),
-                      copy_scripts,
                       copy_sources,
                       info$post_install)
     workdir <- path
