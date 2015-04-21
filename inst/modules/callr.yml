@@ -1,0 +1,8 @@
+packages:
+  github:
+    - traitecoevo/callr
+
+commands:
+  install_callr_scripts:
+    command: RUN r -e 'callr::install("/usr/local/bin")'
+    after: local
