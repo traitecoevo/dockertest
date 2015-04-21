@@ -143,6 +143,8 @@ project_info <- function(type, path_project=NULL) {
                     mustWork=TRUE)
   }
 
+  ret <- add_modules(ret)
+
   if (!is.null(ret$config[["names"]][[type]])) {
     ret$tagname <- ret$config[["names"]][[type]]
   } else {
@@ -226,4 +228,52 @@ add_dockertest_deps <- function(info) {
   config$packages$R <- union(config$packages$R, "devtools")
   info$config <- config
   info
+}
+
+add_modules <- function(info) {
+  modules <- info$config$modules
+  if (is.null(modules)) {
+    return(info)
+  }
+
+  modules_files <- paste0(modules, ".yml")
+  ok <- file.exists(modules_files)
+  if (any(!ok)) {
+    modules_files[!ok] <- system.file(file.path("modules", modules_files[!ok]),
+                                      package="dockertest",
+                                      mustWork=TRUE)
+  }
+
+  for (f in modules_files) {
+    x <- read_module(f)
+    ## load module github packages and commands *first*:
+    info$config$system <- union(x$system, info$config$system)
+    info$config$packages$R <-
+      union(x$packages$R, info$config$packages$R)
+    info$config$packages$github <-
+      union(x$packages$github, info$config$packages$github)
+    info$config$commands <- union(x$commands, info$config$commands)
+    info$config$system_ignore_packages <-
+      union(x$system_ignore_packages,
+            info$config$system_ignore_packages)
+  }
+
+  info
+}
+
+read_module <- function(filename) {
+  dat <- yaml_read(filename)
+  ok <- c("system", "packages", "system_ignore_packages", "commands")
+  ok_packages <- c("R", "github")
+  err <- setdiff(names(dat), ok)
+  err_packages <- setdiff(names(dat$packages), ok_packages)
+  if (length(err_packages) > 0L) {
+    err <- c(err, paste0("packages:", err_packages))
+  }
+  if (length(err) > 0L) {
+    warning(sprintf("Unknown fields in module %s\n\t%s",
+                    filename, paste(err, collapse="\n\t")),
+            immediate.=TRUE)
+  }
+  dat
 }

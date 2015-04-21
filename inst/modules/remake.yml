@@ -1,0 +1,8 @@
+packages:
+  R:
+    - remake
+
+commands:
+  install_remake_scripts:
+    command: RUN r -e 'remake:::install_remake("/usr/local/bin")'
+    after: local
