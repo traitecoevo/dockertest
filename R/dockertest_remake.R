@@ -59,7 +59,7 @@ dockerfile_remake_clean <- function(info) {
                                       info$path_self)
   c(list(),
     docker_FROM("richfitz/remake"),
-    docker_apt_get_install(info$config$system),
+    docker_apt_get_install(info$config$apt_packages),
     docker_r('remake::install_remake("/usr/local/bin")'),
     copy_sources,
     docker_WORKDIR(workdir),
@@ -95,7 +95,7 @@ project_info_remake <- function(target="clean", remake_file="remake.yml") {
   info$config$image <- "richfitz/remake"
 
   ## Then, we add packages (need to process the github ones later?)
-  info$config$packages$R <- dat$packages
+  info$config$r_packages <- dat$packages
 
   remake_sources <- file.path(path_remake, "remake_sources.yml")
   sources <- remake:::read_remake_packages(remake_sources)
@@ -105,20 +105,20 @@ project_info_remake <- function(target="clean", remake_file="remake.yml") {
     if (!all(ok)) {
       stop("Non-github sources not handled yet")
     }
-    info$config$packages$github <-
+    info$config$r_github_packages <-
       unname(vapply(sources[ok], function(x) x$repo, character(1)))
   }
 
   ## Target-specific packages:
   packages_target <- unlist(lapply(dat$targets, function(x) x$packages))
   if (length(packages_target) > 0L) {
-    info$config$packages$R <- union(info$config$packages$R,
+    info$config$r_packages <- union(info$config$r_packages,
                                     packages_target)
   }
 
   ## Need to get system deps here, still, but only because we want
   ## *system* information; process that.
-  info$config$system <- dockertest_dependencies(info)$system
+  info$config$apt_packages <- dockertest_dependencies(info)$apt_packages
 
   ## Path to remake, relative to that of the *project*:
   if (path_remake == info$path_project) {

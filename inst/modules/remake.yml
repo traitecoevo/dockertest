@@ -1,8 +1,7 @@
-packages:
-  R:
-    - remake
+r_github_packages:
+  - richfitz/remake
 
 commands:
   install_remake_scripts:
     command: RUN r -e 'remake:::install_remake("/usr/local/bin")'
-    after: local
+    after: r_local_packages

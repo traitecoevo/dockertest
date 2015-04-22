@@ -1,17 +1,17 @@
-system:
+apt_packages:
   - curl
   - ca-certificates
   - git
   - libcurl4-openssl-dev
   - ssh
 
-packages:
-  R:
-    - devtools
-  github:
-    - richfitz/dockertest
+r_packages:
+  - devtools
+
+r_github_packages:
+  - richfitz/dockertest
 
 commands:
   install_dockertest_scripts:
     command: RUN r -e 'dockertest:::copy_scripts_dir("/usr/local/bin")'
-    after: github
+    after: r_github_packages

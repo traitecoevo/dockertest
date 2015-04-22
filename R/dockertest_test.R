@@ -26,28 +26,28 @@ dockerfile_dockertest <- function(info) {
     workdir <- path
   }
 
-  if (is.null(deps$local)) {
+  if (is.null(deps$r_local_packages)) {
     local_paths <- NULL
   } else {
-    local_paths <- file.path(info$path_local, names(deps$local))
+    local_paths <- file.path(info$path_local, names(deps$r_local_packages))
   }
 
-  extra <- process_extra_commands(info)
+  commands_after <- process_extra_commands(info)
 
   c(list(),
     docker_FROM(info$config$image),
-    docker_apt_get_install(deps$system),
-    extra$system,
-    docker_install2(deps$R, deps$repos),
-    extra$R,
-    docker_install_github(deps$github),
-    extra$github,
+    docker_apt_get_install(deps$apt_packages),
+    commands_after$apt_packages,
+    docker_install2(deps$r_packages, deps$repos),
+    commands_after$r_packages,
+    docker_install_github(deps$r_github_packages),
+    commands_after$r_github_packages,
     ## Local paths are relative to the build directory.
     docker_install_local(local_paths),
-    extra$local,
+    commands_after$r_local_packages,
     post_install,
     docker_WORKDIR(workdir),
-    extra$workdir,
+    commands_after$workdir,
     docker_CMD("bash"))
 }
 
@@ -56,7 +56,9 @@ dockerfile_dockertest <- function(info) {
 process_extra_commands <- function(info) {
   cmds <- info$config$commands
 
-  ret <- list(system=NULL, R=NULL, github=NULL, local=NULL, workdir=NULL)
+  ret <- list(apt_packages=NULL, r_packages=NULL,
+              r_github_packages=NULL, r_local_packages=NULL,
+              workdir=NULL)
   if (length(cmds) > 0L) {
     when <- lapply(cmds, "[[", "after")
     when[vapply(when, is.null, logical(1))] <- "github"

@@ -75,7 +75,7 @@ copy_scripts_dir <- function(path) {
 ## This is used to clone local sources into the directory that we
 ## build from so that can get them into the container nicely.
 clone_local <- function(info) {
-  local_paths <- info$config$packages$local
+  local_paths <- info$config$r_local_packages
   if (length(local_paths) == 0L) {
     return()
   }
@@ -137,9 +137,9 @@ project_info <- function(type, path_project=NULL) {
 
   ret$config <- load_config(ret$path_project)
 
-  if (!is.null(ret$config$packages$local)) {
-    ret$config$packages$local <-
-      normalizePath(file.path(path_project, ret$config$packages$local),
+  if (!is.null(ret$config$r_local_packages)) {
+    ret$config$r_local_packages <-
+      normalizePath(file.path(path_project, ret$config$r_local_packages),
                     mustWork=TRUE)
   }
 
@@ -178,13 +178,23 @@ project_info <- function(type, path_project=NULL) {
 load_config <- function(path_project=NULL) {
   ## We'll look in the local directory and in the package root.
   config_file <- "dockertest.yml"
-  defaults <- list(system_ignore_packages=NULL,
-                   system=NULL,
-                   packages=list(github=NULL, local=NULL),
-                   image="r-base",
-                   names=NULL,
-                   inplace=FALSE,
-                   deps_only=TRUE)
+  defaults <- list(
+    # Image to build from:
+    image="r-base",
+    # System dependencies via apt:
+    apt_packages=NULL,
+    # R package dependencies from CRAN, github and local sources:
+    r_packages=NULL,
+    r_github_packages=NULL,
+    r_local_packages=NULL,
+    # Packages to ignore system dependencies from:
+    system_ignore_packages=NULL,
+    # Tag names for generated images:
+    names=NULL,
+    # I'm not really sure anymore
+    inplace=FALSE,
+    # Don't include the sources of this package
+    deps_only=TRUE)
   if (file.exists(config_file)) {
     ret <- yaml_read(config_file)
     ret <- modifyList(defaults, ret)
@@ -200,11 +210,11 @@ load_config <- function(path_project=NULL) {
 add_project_deps <- function(info) {
   config <- info$config
 
-  config$packages$github <-
-    union(config$packages$github,
+  config$r_github_packages <-
+    union(config$r_github_packages,
           packages_github_travis(info$path_project))
-  config$system <-
-    union(config$system,
+  config$apt_packages <-
+    union(config$apt_packages,
           system_requirements_travis(info$path_project))
 
   if (info$is_package) {
@@ -213,7 +223,7 @@ add_project_deps <- function(info) {
   } else {
     package_names <- character(0)
   }
-  config$packages$R <- union(config$packages$R, package_names)
+  config$r_packages <- union(config$r_packages, package_names)
 
   info$config <- config
   info
@@ -236,11 +246,11 @@ add_modules <- function(info) {
   for (f in modules_files) {
     x <- read_module(f)
     ## load module github packages and commands *first*:
-    info$config$system <- union(x$system, info$config$system)
-    info$config$packages$R <-
-      union(x$packages$R, info$config$packages$R)
-    info$config$packages$github <-
-      union(x$packages$github, info$config$packages$github)
+    info$config$apt_packages <- union(x$apt_packages, info$config$apt_packages)
+    info$config$r_packages <-
+      union(x$r_packages, info$config$r_packages)
+    info$config$r_github_packages <-
+      union(x$r_github_packages, info$config$r_github_packages)
     info$config$commands <- union(x$commands, info$config$commands)
     info$config$system_ignore_packages <-
       union(x$system_ignore_packages,
@@ -252,13 +262,9 @@ add_modules <- function(info) {
 
 read_module <- function(filename) {
   dat <- yaml_read(filename)
-  ok <- c("system", "packages", "system_ignore_packages", "commands")
-  ok_packages <- c("R", "github")
+  ok <- c("apt_packages", "r_packages", "r_github_packages",
+          "system_ignore_packages", "commands")
   err <- setdiff(names(dat), ok)
-  err_packages <- setdiff(names(dat$packages), ok_packages)
-  if (length(err_packages) > 0L) {
-    err <- c(err, paste0("packages:", err_packages))
-  }
   if (length(err) > 0L) {
     warning(sprintf("Unknown fields in module %s\n\t%s",
                     filename, paste(err, collapse="\n\t")),

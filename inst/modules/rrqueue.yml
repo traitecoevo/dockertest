@@ -1,21 +1,22 @@
-system:
+apt_packages:
   - libhiredis-dev
 
-packages:
-  R:
-    - RcppRedis
-  github:
-    - richfitz/remake
-    - ropensci/RedisAPI
-    - richfitz/RedisHeartbeat
-    - gaborcsardi/progress
-    - traitecoevo/rrqueue
+r_packages:
+  - RcppRedis
+
+r_github_packages:
+  - richfitz/remake
+  - ropensci/RedisAPI
+  - richfitz/RedisHeartbeat
+  - gaborcsardi/progress
+  - traitecoevo/rrqueue
 
 system_ignore_packages:
   - rrqueue # Redis; we'll satisfy that elsewhere.
 
 commands:
   install_rrqueue_scripts:
-    # Post-installation hook for rrqueue
+    # Post-installation hook for rrqueue; I've put this after local
+    # because it will be locally included in a lot of our builds.
     command: RUN r -e 'rrqueue:::install_scripts("/usr/local/bin")'
-    after: local
+    after: r_local_packages

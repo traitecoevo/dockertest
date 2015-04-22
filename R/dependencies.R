@@ -1,19 +1,20 @@
 dockertest_dependencies <- function(info) {
   config <- info$config
 
-  packages <- deps(config$packages$R,
-                   config$packages$github,
-                   config$packages$local)
+  ret <- deps(config$r_packages,
+              config$r_github_packages,
+              config$r_local_packages)
 
-  package_info <- deps_fetch_package_info(packages$github, packages$local)
-  package_names <- unlist(lapply(packages, names), use.names=FALSE)
+  package_info <- deps_fetch_package_info(ret$r_github_packages,
+                                          ret$r_local_packages)
+  package_names <- unlist(lapply(ret, names), use.names=FALSE)
   package_names_all <- deps_recursive(package_names, package_info)$name
-  system <- deps_system(c(package_names, package_names_all),
-                        package_info, info)
-  repos <- deps_repos(info)
+  apt_packages <- deps_apt_packages(c(package_names, package_names_all),
+                                    package_info, info)
+  ret$repos <- deps_repos(info)
+  ret$apt_packages <- union(apt_packages, config$apt_packages)
 
-  c(list(system=union(system, config$system), repos=repos),
-    packages)
+  ret
 }
 
 deps_repos <- function(info) {
@@ -31,6 +32,7 @@ deps_repos <- function(info) {
 deps <- function(package_names,
                  github_repos=NULL,
                  local_paths=NULL,
+                 ## TODO: I don't think  these are used?
                  local_dependencies=TRUE,
                  keep_devtools=TRUE) {
   ## First, ensure that we have all the github data we need:
@@ -80,9 +82,9 @@ deps <- function(package_names,
     package_names <- package_names[!drop_R]
   }
 
-  list(R=package_names,
-       github=github_repos,
-       local=local_paths)
+  list(r_packages=package_names,
+       r_github_packages=github_repos,
+       r_local_packages=local_paths)
 }
 
 deps_recursive <- function(package_names, package_info, all=FALSE) {
@@ -131,7 +133,7 @@ deps_recursive <- function(package_names, package_info, all=FALSE) {
   deps_all
 }
 
-deps_system <- function(package_names, package_info, info) {
+deps_apt_packages <- function(package_names, package_info, info) {
   package_names <- sort(setdiff(unique(package_names), base_packages()))
 
   ok <- package_names %in% rownames(package_info)
