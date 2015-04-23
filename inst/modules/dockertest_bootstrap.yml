@@ -9,7 +9,7 @@ r_packages:
   - devtools
 
 r_github_packages:
-  - richfitz/dockertest
+  - traitecoevo/dockertest
 
 commands:
   install_dockertest_scripts:
