@@ -7,7 +7,7 @@ Use cases:
 * **Packages:** Build a docker container that contains all your package dependencies, and use this to test installation, tests and `R CMD check` within, independent of your system.  This gives the isolated environment of [travis](https://travis-ci.org) with a much faster cycle time (no installation time, potentially no slower than running the tests in the package directory).
 * **Projects**:
   - **start:** Build images that contain all the dependencies of a project to run in a container-supporting cloud environment
-  sta- **end:** Build images that contain a project in its completely run state.
+  - **end:** Build images that contain a project in its completely run state.
 
 Below documentation is listed for *packages*, then for *projects*.  Below that is the general configuration options that apply across all types.
 
@@ -73,7 +73,7 @@ project
 Next you need to specify any depenencies you want included in the image -- see the [Configuration](#configuration) section.
 
 Then from within the `docker` directory, run
-sta
+
 ```
 dockertest::build()
 ```
