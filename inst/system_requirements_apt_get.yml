@@ -17,3 +17,4 @@ python-dev: python-dev
 zlib: zlib1g-dev
 GNU make: ~ # installed already
 libhiredis-dev: libhiredis-dev
+libv8-dev: libv8-dev
