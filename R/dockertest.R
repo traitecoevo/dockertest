@@ -156,6 +156,7 @@ project_info <- function(type, path_project=NULL) {
   ## TODO: All references to the build path are probably wrong now?
   ret$path_build <- sub("^.*/", "", ret$tagname)
 
+  ## TODO: why does inplace affect local as well as self?
   if (ret$inplace) {
     ## Get the path to the local sources *relative to the project*.
     ## TODO: This is a *path difference*, see project_info_remake()

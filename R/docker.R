@@ -129,9 +129,7 @@ docker_install_local <- function(local_paths) {
 
 docker_copy_sources <- function(path, local_filesystem, path_self=".",
                                 deps_only=FALSE) {
-  if (deps_only) {
-    copy_sources <- NULL
-  } else if (local_filesystem) {
+  if (local_filesystem) {
     str   <- paste("clone.sh", path)
     str_r <- sprintf("system('%s')", str)
     cmd <- c(paste0("mkdir ", path),
@@ -139,6 +137,8 @@ docker_copy_sources <- function(path, local_filesystem, path_self=".",
              sprintf('echo "%s" > /root/.Rprofile', str_r),
              sprintf('echo "%s" > /root/.littler.r', str_r))
     copy_sources <- docker_RUN(cmd)
+  } else if (deps_only) {
+    copy_sources <- NULL
   } else {
     copy_sources <- docker_COPY(path_self, path)
   }

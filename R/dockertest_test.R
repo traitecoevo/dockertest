@@ -4,6 +4,7 @@ dockerfile_dockertest <- function(info) {
   info <- add_project_deps(info)
   deps <- dockertest_dependencies(info)
   path <- file.path("/root", info$name)
+
   copy_sources <- docker_copy_sources(path,
                                       info$local_filesystem,
                                       info$path_self,
