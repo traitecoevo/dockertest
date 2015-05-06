@@ -12,6 +12,7 @@ before_install:
 install:
   - ./travis-tool.sh install_deps
   - ./travis-tool.sh install_github metacran/crandb
+  - ./travis-tool.sh install_github richfitz/storr
   - ./travis-tool.sh install_github richfitz/remake
 
 script: ./travis-tool.sh run_tests
