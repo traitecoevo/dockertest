@@ -2,8 +2,10 @@
 
 export(build)
 export(build_remake)
+export(install_script)
 export(prepare)
 export(prepare_remake)
+importFrom(docopt,docopt)
 importFrom(downloader,download)
 importFrom(httr,GET)
 importFrom(httr,content)
