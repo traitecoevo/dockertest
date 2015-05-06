@@ -1,7 +1,7 @@
 dockertest_dependencies <- function(info) {
   config <- info$config
 
-  ret <- deps(config$r_packages,
+  ret <- deps(setdiff(config$r_packages, base_packages()),
               config$r_github_packages,
               config$r_local_packages)
 
