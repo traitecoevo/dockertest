@@ -25,7 +25,7 @@ system_requirements_sanitise <- function(reqs, ignore=NULL) {
 
   ## Then, we can try and parse names out using devtools:
   f <- function(x) {
-    ret <- try(devtools:::parse_deps(x)$name, silent=TRUE)
+    ret <- try(devtools::parse_deps(x)$name, silent=TRUE)
     if (inherits(ret, "try-error")) {
       ret <- x
     }

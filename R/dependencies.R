@@ -53,8 +53,7 @@ deps <- function(package_names,
     ## cause weird problems (e.g., depending on remake means we need
     ## to list remake sources).
     deps_extra_local <-
-      sort(unique(unlist(lapply(local_paths, function(x)
-        devtools:::pkg_deps(x)$name))))
+      sort(unique(unlist(lapply(local_paths, function(x) pkg_deps(x)$name))))
 
     ## Collect all dependencies of
     exclude <- c(names(local_paths),
@@ -266,4 +265,23 @@ deps_fetch_package_info_extra <- function(github_repos,
   ret <- do.call("rbind", dat)
   rownames(ret) <- ret[, "Package"]
   ret
+}
+
+
+pkg_deps <- function(pkg, dependencies=NA) {
+  pkg <- devtools::as.package(pkg)
+
+  deps <- if (identical(dependencies, NA)) {
+    c("Depends", "Imports", "LinkingTo")
+  } else if (isTRUE(dependencies)) {
+    c("Depends", "Imports", "LinkingTo", "Suggests", "VignetteBuilder")
+  } else if (identical(dependencies, FALSE)) {
+    character(0)
+  } else {
+    dependencies
+  }
+
+  deps <- unlist(pkg[tolower(deps)], use.names = FALSE)
+
+  devtools::parse_deps(paste(deps, collapse = ','))
 }

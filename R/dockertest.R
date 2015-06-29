@@ -220,7 +220,7 @@ add_project_deps <- function(info) {
 
   if (info$is_package) {
     pkg <- devtools::as.package(info$path_package)
-    package_names <- devtools:::pkg_deps(pkg, dependencies=TRUE)[, "name"]
+    package_names <- pkg_deps(pkg, dependencies=TRUE)[, "name"]
   } else {
     package_names <- character(0)
   }
