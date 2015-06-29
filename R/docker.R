@@ -13,10 +13,17 @@ format_docker <- function(commands, filename=NULL) {
   str
 }
 
+##' @importFrom callr Sys_which
 boot2docker_shellinit <- function() {
   if (Sys.getenv("DOCKER_HOST") == "") {
-    tmp <- system2("boot2docker", "shellinit", stdout=TRUE, stderr=FALSE)
-    vars <- strsplit(sub("^\\s*export\\s+", "", tmp), "=", fixed=TRUE)
+    boot2docker <- callr::Sys_which("boot2docker")
+    status <- callr::call_system(boot2docker, "status", stderr=FALSE)
+    if (!identical(status, "running")) {
+      stop("boot2docker not running? Status: ", status)
+    }
+
+    res <- callr::call_system(boot2docker, "shellinit", stderr=FALSE)
+    vars <- strsplit(sub("^\\s*export\\s+", "", res), "=", fixed=TRUE)
     if (!all(vapply(vars, length, integer(1)) == 2L)) {
       stop("Unexpected output from boot2docker shellinit")
     }
