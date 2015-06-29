@@ -9,6 +9,7 @@ r_packages:
   - devtools
 
 r_github_packages:
+  - traitecoevo/callr
   - traitecoevo/dockertest
 
 commands:
