@@ -246,19 +246,25 @@ add_modules <- function(info) {
                                       mustWork=TRUE)
   }
 
+  ## What we want to do is load github packages and commands *first*
+  ## but load them in the order specified.
+  r_github_packages <- commands <- character(0)
   for (f in modules_files) {
     x <- read_module(f)
-    ## load module github packages and commands *first*:
-    info$config$apt_packages <- union(x$apt_packages, info$config$apt_packages)
+    info$config$apt_packages <-
+      union(info$config$apt_packages, x$apt_packages)
     info$config$r_packages <-
-      union(x$r_packages, info$config$r_packages)
-    info$config$r_github_packages <-
-      union(x$r_github_packages, info$config$r_github_packages)
-    info$config$commands <- union(x$commands, info$config$commands)
+      union(info$config$r_packages, x$r_packages)
+    r_github_packages <- union(r_github_packages, x$r_github_packages)
+    commands <- union(commands, x$commands)
     info$config$system_ignore_packages <-
       union(x$system_ignore_packages,
             info$config$system_ignore_packages)
   }
+
+  info$config$r_github_packages <-
+    union(r_github_packages, info$config$r_github_packages)
+  info$config$commands <- union(commands, info$config$commands)
 
   info
 }
