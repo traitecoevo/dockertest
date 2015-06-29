@@ -15,13 +15,14 @@ system_requirements_sanitise <- function(reqs, ignore=NULL) {
 
   ## Drop ignored packages:
   reqs <- reqs[setdiff(names(reqs), ignore)]
-  ## And packages that are ignored
-  reqs <- reqs[!is.na(reqs)]
 
   ## Replacements:
   i <- match(names(reqs), names(dat))
   j <- !is.na(i)
   reqs[j] <- dat[i[j]]
+
+  ## And packages that are ignored
+  reqs <- reqs[!is.na(reqs)]
 
   ## Then, we can try and parse names out using devtools:
   f <- function(x) {

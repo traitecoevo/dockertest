@@ -31,3 +31,23 @@ V8:
   # SystemRequirements:   V8: libv8-dev (deb), v8-devel (rpm), v8-3.14
   #                       (arch)
   - libv8-dev
+
+curl:
+  # SystemRequirements:   libcurl: libcurl-devel (rpm) or
+  #                       libcurl4-openssl-dev (deb).
+  - libcurl
+
+git2r:
+  # SystemRequirements:   zlib headers and library. OpenSSL (non-Windows)
+  #                       headers and library. Optional LibSSH2
+  #                       (non-Windows) to enable the SSH transport.
+  - zlib
+  - openssl
+  - libssh2
+
+stringi:
+  - libicu-dev
+
+# the xml2 package doesn't list its system dependencies, which is annoying.
+xml2:
+  - libxml2-dev

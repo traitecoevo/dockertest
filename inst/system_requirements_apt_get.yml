@@ -10,6 +10,7 @@ java: [default-jre, default-jdk]
 libcurl: libcurl4-openssl-dev
 libpng: libpng12-dev
 libxml2: libxml2-dev
+libxml2-dev: libxml2-dev
 nlopt: libnlopt-dev
 pandoc: pandoc
 perl: ~ # installed already
@@ -18,3 +19,6 @@ zlib: zlib1g-dev
 GNU make: ~ # installed already
 libhiredis-dev: libhiredis-dev
 libv8-dev: libv8-dev
+openssl: libssl-dev
+libssh2: libssh2-1-dev
+libicu-dev: libicu-dev
