@@ -137,6 +137,12 @@ project_info <- function(type, path_project=NULL) {
 
   ret$config <- load_config(ret$path_project)
 
+  ## If we install the package, this needs overriding, regardless of
+  ## what it was set as in the config.
+  if (ret$install_package) {
+    ret$config$deps_only <- FALSE
+  }
+
   if (!is.null(ret$config$r_local_packages)) {
     ret$config$r_local_packages <-
       normalizePath(file.path(path_project, ret$config$r_local_packages),

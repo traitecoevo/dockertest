@@ -59,6 +59,14 @@ There are also some convenience scripts that are installed in the docker image s
 * `<package_name>-test/launch.sh devtools_check`: Runs `devtools::check()` on the fresh clone
 * `<package_name>-test/launch.sh R_test`: clone your repo and launch R in the `tests/testthat` directory, load the package (with `devtools::load_all()`) and read all helper files.  This means you can start interactively evaluating tests in approximately the way that devtools would work.
 
+Running
+
+```
+dockertest::build("production")
+```
+
+will build a dockerfile that includes the package installed (basically, builds the test image then installs the package into that).
+
 ## Projects
 
 Non-package projects can be accessed in the same way. As before, you'll want to run dockertest from within a subdirectory (e.g., `docker/`) because we copy files and clone some repos around.  So your directory structure should look like
