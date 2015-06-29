@@ -59,7 +59,7 @@ dockerfile_remake_clean <- function(info) {
                                       info$path_self)
   c(list(),
     docker_FROM("richfitz/remake"),
-    docker_apt_get_install(info$config$apt_packages),
+    docker_apt_get_install(info$config$apt_packages, info$config$apt_unstable),
     docker_r('remake::install_remake("/usr/local/bin")'),
     copy_sources,
     docker_WORKDIR(workdir),

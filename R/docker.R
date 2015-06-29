@@ -77,13 +77,16 @@ docker_join <- function(x, list=TRUE, sort=list) {
   }
 }
 
-docker_apt_get_install <- function(packages) {
+docker_apt_get_install <- function(packages, unstable) {
   if (length(packages) == 0L) {
     return(NULL)
   }
+  opts <- c("-y", "--no-install-recommends",
+            if (unstable) "-t unstable")
+
+  cmd_install <- sprintf("apt-get install %s", paste(opts, collapse=" "))
   cmd <- c("apt-get update",
-           paste0("apt-get install -y --no-install-recommends ",
-                  docker_join(packages, list=TRUE)),
+           paste0(cmd_install, docker_join(packages, list=TRUE)),
            "apt-get clean")
   # "rm -rf /var/lib/apt/lists/")
   docker_RUN(cmd)

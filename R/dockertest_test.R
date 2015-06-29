@@ -37,7 +37,7 @@ dockerfile_dockertest <- function(info) {
 
   c(list(),
     docker_FROM(info$config$image),
-    docker_apt_get_install(deps$apt_packages),
+    docker_apt_get_install(deps$apt_packages, config$apt_unstable),
     commands_after$apt_packages,
     docker_install2(deps$r_packages, deps$repos),
     commands_after$r_packages,

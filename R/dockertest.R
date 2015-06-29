@@ -180,21 +180,23 @@ load_config <- function(path_project=NULL) {
   ## We'll look in the local directory and in the package root.
   config_file <- "dockertest.yml"
   defaults <- list(
-    # Image to build from:
+    ## Image to build from:
     image="r-base",
-    # System dependencies via apt:
+    ## System dependencies via apt:
     apt_packages=NULL,
-    # R package dependencies from CRAN, github and local sources:
+    ## Use unstable?
+    apt_unstable=FALSE,
+    ## R package dependencies from CRAN, github and local sources:
     r_packages=NULL,
     r_github_packages=NULL,
     r_local_packages=NULL,
-    # Packages to ignore system dependencies from:
+    ## Packages to ignore system dependencies from:
     system_ignore_packages=NULL,
-    # Tag names for generated images:
+    ## Tag names for generated images:
     names=NULL,
-    # I'm not really sure anymore
+    ## I'm not really sure anymore
     inplace=FALSE,
-    # Don't include the sources of this package
+    ## Don't include the sources of this package
     deps_only=TRUE)
   if (file.exists(config_file)) {
     ret <- yaml_read(config_file)
