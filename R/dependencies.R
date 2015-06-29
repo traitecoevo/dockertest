@@ -163,8 +163,9 @@ deps_apt_packages <- function(package_names, package_info, info) {
   ## Provide a message (but not a warning) about system requirements
   ## that might be unsatisified.
   if (length(sys_reqs$unresolved) > 0) {
-    unresolved_name <- names(sys_reqs$unresolved)
+    unresolved_name <- gsub("\n", " ", names(sys_reqs$unresolved))
     unresolved_pkg  <- sapply(sys_reqs$unresolved, paste, collapse=", ")
+
     msg <- paste(sprintf("\t- %s: %s", unresolved_name, unresolved_pkg),
                  collapse="\n")
     msg <- paste("Unresolved SystemRequirements:", msg,

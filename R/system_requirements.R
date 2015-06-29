@@ -44,10 +44,15 @@ system_requirements_apt_get <- function(reqs) {
   dat <- yaml_read(file)
   i <- match(unlist(reqs), names(dat))
   resolved <- sort(unique(unlist(dat[i], use.names=FALSE)))
-  unresolved <- unlist(reqs)[is.na(i)]
+
+  j <- is.na(i)
+  unresolved <- unlist(reqs)[j]
+  names(unresolved) <- rep(names(reqs), vapply(reqs, length, integer(1)))[j]
+
   if (length(unresolved) > 0) {
     unresolved <- split(names(unresolved), unresolved)
   }
+
   list(resolved=resolved, unresolved=unresolved)
 }
 
