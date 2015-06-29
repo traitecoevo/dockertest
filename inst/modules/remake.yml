@@ -1,4 +1,5 @@
 r_github_packages:
+  - richfitz/storr
   - richfitz/remake
 
 commands:
