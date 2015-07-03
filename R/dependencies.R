@@ -102,6 +102,13 @@ deps_recursive <- function(package_names, package_info, all=FALSE) {
   join_deps <- function(x) {
     gsub("\n", " ", paste(na.omit(x[v]), collapse=", "))
   }
+  deps_local <- function(x) {
+    x <- x[v]
+    x[vapply(x, is.null, logical(1))] <- NA_character_
+    storage.mode(x) <- "character"
+    names(x) <- v
+    join_deps(x)
+  }
 
   ## TODO: Need to pass in either the configuration or a list of
   ## github repos here.
@@ -117,8 +124,7 @@ deps_recursive <- function(package_names, package_info, all=FALSE) {
     }
     ## Offline, or locally installed
     if (any(!i)) {
-      str <- c(str, sapply(package_descriptions(package_names[!i]),
-                           join_deps))
+      str <- c(str, sapply(package_descriptions(package_names[!i]), deps_local))
     }
     x <- join(lapply(str, devtools:::parse_deps))
     seen <- c(seen, package_names)
