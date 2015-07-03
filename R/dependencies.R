@@ -227,10 +227,16 @@ deps_fetch_package_info <- function(github_repos, local_paths) {
 
 ##' @importFrom httr GET content
 ##' @importFrom jsonlite fromJSON
-deps_fetch_package_info_crandb <- function(force=FALSE) {
+deps_fetch_package_info_crandb <- function(force=FALSE, expire=1) {
   dest <- file.path(user_data_dir(), "PACKAGES_crandb.rds")
-  ## TODO: expire this.  Possibly don't return it.
-  if (force || !file.exists(dest)) {
+
+  fetch <- force || !file.exists(dest)
+  if (!fetch) {
+    dt <- difftime(Sys.time(), file.info(dest)[["ctime"]],
+                   units="days")
+    fetch <- as.numeric(dt) > expire
+  }
+  if (fetch) {
     ## From metacran/crandb's DB:
     api <- "/-/latest"
     url <- paste0("http://crandb.r-pkg.org", "/", api)
