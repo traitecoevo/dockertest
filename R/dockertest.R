@@ -7,9 +7,10 @@
 ##' image?
 ##' @export
 build <- function(type="test", prepare=TRUE, use_cache=TRUE) {
-  info <- project_info(type)
   if (prepare) {
-    prepare(info)
+    info <- prepare(type)
+  } else {
+    info <- project_info(type)
   }
   dockerfile <- file.path(info$path_build, "Dockerfile")
   path <- if (info$inplace) info$path_project else "."
@@ -19,10 +20,11 @@ build <- function(type="test", prepare=TRUE, use_cache=TRUE) {
 ##' Prepare for a build by writing a dockerfile and copying scripts
 ##' into the build directory.
 ##' @title Prepare for docker build
-##' @param info Result of \code{project_info}, which is not exported,
-##' so that's a bit mean.
+##' @param type Type of container to build.  Valid options are "test",
+##' "run" and "production" (last one only for packages).
 ##' @export
-prepare <- function(info) {
+prepare <- function(type="test") {
+  info <- project_info(type)
   dir.create(info$path_build, FALSE, TRUE)
   clone_local(info)
   if (!info$inplace) {
@@ -31,6 +33,7 @@ prepare <- function(info) {
   format_docker(dockerfile_dockertest(info),
                 file.path(info$path_build, "Dockerfile"))
   write_launch_script(info)
+  info
 }
 
 ## TODO: Need to get the simple hooks in here when info$type is true:

@@ -4,11 +4,11 @@
 \alias{prepare}
 \title{Prepare for docker build}
 \usage{
-prepare(info)
+prepare(type = "test")
 }
 \arguments{
-\item{info}{Result of \code{project_info}, which is not exported,
-so that's a bit mean.}
+\item{type}{Type of container to build.  Valid options are "test",
+"run" and "production" (last one only for packages).}
 }
 \description{
 Prepare for a build by writing a dockerfile and copying scripts
