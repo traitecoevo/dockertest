@@ -3,27 +3,29 @@
 ##' @param type Type of container to build.  Valid options are "test",
 ##' "run" and "production" (last one only for packages).
 ##' @param use_cache Set to FALSE to skip docker's cache
+##' @param machine name of docker machine to use
 ##' @param prepare Rerun \code{\link{prepare}} before building the
 ##' image?
 ##' @export
-build <- function(type="test", prepare=TRUE, use_cache=TRUE) {
+build <- function(type="test", prepare=TRUE, use_cache=TRUE, machine="default") {
   if (prepare) {
-    info <- prepare(type)
+    info <- prepare(type, machine)
   } else {
     info <- project_info(type)
   }
   dockerfile <- file.path(info$path_build, "Dockerfile")
   path <- if (info$inplace) info$path_project else "."
-  docker_build(path, dockerfile, info$tagname, use_cache)
+  docker_build(path, dockerfile, info$tagname, use_cache, machine)
 }
 
 ##' Prepare for a build by writing a dockerfile and copying scripts
 ##' into the build directory.
 ##' @title Prepare for docker build
 ##' @param type Type of container to build.  Valid options are "test",
+##' @param machine name of docker machine to use
 ##' "run" and "production" (last one only for packages).
 ##' @export
-prepare <- function(type="test") {
+prepare <- function(type="test", machine="default") {
   info <- project_info(type)
   dir.create(info$path_build, FALSE, TRUE)
   clone_local(info)
@@ -32,7 +34,7 @@ prepare <- function(type="test") {
   }
   format_docker(dockerfile_dockertest(info),
                 file.path(info$path_build, "Dockerfile"))
-  write_launch_script(info)
+  write_launch_script(info, machine)
   info
 }
 
@@ -43,11 +45,11 @@ prepare <- function(type="test") {
 ##   check
 ##   test
 ##   devtools_check
-write_launch_script <- function(info) {
+write_launch_script <- function(info, machine="default") {
   if (is_mac()) {
-    boot2docker <- "$(boot2docker shellinit 2> /dev/null)"
+    docker_machine <- sprintf("eval '$(docker-machine env %s)'", machine)
   } else {
-    boot2docker <- NULL
+    docker_machine <- NULL
   }
   if (info$local_filesystem) {
     volume_map <- sprintf("-v %s:/src", info$path_project)
@@ -58,7 +60,7 @@ write_launch_script <- function(info) {
   dest <- file.path(info$path_build, "launch.sh")
   str <- c("#!/bin/bash",
            "set -e",
-           boot2docker,
+           docker_machine,
            sprintf("docker run %s -it %s $*", volume_map, info$tagname))
   writeLines(str, dest)
   Sys.chmod(dest, "0755")

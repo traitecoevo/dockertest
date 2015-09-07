@@ -88,6 +88,12 @@ dockertest::build()
 
 to build an image that contains project dependencies, and clones your project into `/root/<project_name>` (which will be the working directory when the container starts).
 
+If you are running docker via docker-machine and want to use something other than the default machine, you can specify the machine name in an argument
+
+```
+dockertest::build(machine = "default")
+```
+
 The dockerfile to create the image will be in `<package_name>-test/Dockerfile` and a script `<package_name>-test/launch.sh` is created.
 
 To aid development, project sources are *not* included in this container: instead, the container will clone them when you start it - that way you don't need to rebuild the container every time you update your project, and only when the dependencies are updated.
@@ -119,7 +125,9 @@ will build a container *based on the clean container* by making the "all" target
 
 ## Configuration
 
-Dependnecies are added via a [yaml](https://yaml.org) file saved at `root/docker/dockertest.yml. See [here](https://github.com/dfalster/baad/blob/master/docker/dockertest.yml) for a worked example. These must be specified *before* you build your container.
+Dependencies are added via a [yaml](https://yaml.org) file saved at `root/docker/dockertest.yml. See [here](https://github.com/dfalster/baad/blob/master/docker/dockertest.yml) for a worked example. These must be specified *before* you build your container.
+
+
 
 ### Base image
 

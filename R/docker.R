@@ -14,36 +14,42 @@ format_docker <- function(commands, filename=NULL) {
 }
 
 ##' @importFrom callr Sys_which
-boot2docker_shellinit <- function() {
+docker_machine_init <- function(machine="default") {
   if (Sys.getenv("DOCKER_HOST") == "") {
-    boot2docker <- callr::Sys_which("boot2docker")
-    status <- callr::call_system(boot2docker, "status", stderr=FALSE)
-    if (!identical(status, "running")) {
-      stop("boot2docker not running? Status: ", status)
+    docker_machine <- callr::Sys_which("docker-machine")
+    status <- callr::call_system(docker_machine, "active", stderr=FALSE)
+    if (!identical(status, machine)) {
+      stop("docker not running? Status: ", status)
     }
 
-    res <- callr::call_system(boot2docker, "shellinit", stderr=FALSE)
+    res <- callr::call_system(docker_machine, paste("env ", machine), stderr=FALSE)
+
+    # Filter to lines containing `export`
+    res <- res[grep("export", res)]
     vars <- strsplit(sub("^\\s*export\\s+", "", res), "=", fixed=TRUE)
-    if (!all(vapply(vars, length, integer(1)) == 2L)) {
-      stop("Unexpected output from boot2docker shellinit")
+    if (!all(vapply(vars, length, integer(1)) == 2)) {
+      stop("Unexpected output from docker-machine")
     }
 
     var_name <- vapply(vars, function(x) x[[1]], character(1))
     var_val  <- as.list(vapply(vars, function(x) x[[2]], character(1)))
+
     names(var_val) <- var_name
     do.call("Sys.setenv", var_val)
 
     if (Sys.getenv("DOCKER_HOST") == "") {
-      stop("Failed to set boot2docker variables")
+      stop("Failed to set docker_machine variables")
     }
   }
 }
 
-docker_build <- function(path, dockerfile, tagname, use_cache=TRUE) {
+docker_build <- function(path, dockerfile, tagname, use_cache=TRUE, machine="default") {
   if (Sys.info()[["sysname"]] == "Darwin") {
     ## TODO: Also windows, apparently.
-    boot2docker_shellinit()
+    ## TODO: Ability add option to pass in other machine names
+    docker_machine_init(machine)
   }
+
   ## TODO: Need to get *relative* path to project here; i.e., how many
   ## steps down are we?  That becomes the build directory.  It's going
   ## to be ".." in many cases.
