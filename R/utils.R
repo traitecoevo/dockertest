@@ -122,3 +122,7 @@ git_clone <- function(repo, dest, quiet=FALSE, shallow=FALSE) {
     stop("Error cloning ", repo, " to ", dest)
   }
 }
+
+vcapply <- function(X, FUN, ...) {
+  vapply(X, FUN, character(1), ...)
+}

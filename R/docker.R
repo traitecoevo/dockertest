@@ -16,23 +16,30 @@ format_docker <- function(commands, filename=NULL) {
 ##' @importFrom callr Sys_which
 docker_machine_init <- function(machine="default") {
   if (Sys.getenv("DOCKER_HOST") == "") {
+    message("Setting up docker-machine")
     docker_machine <- callr::Sys_which("docker-machine")
-    status <- callr::call_system(docker_machine, "active", stderr=FALSE)
-    if (!identical(status, machine)) {
-      stop("docker not running? Status: ", status)
+    status <- callr::call_system(docker_machine, c("status", machine))
+    if (!identical(status, "Running")) {
+      stop(sprintf("docker-machine %s not running? Status: %s",
+                   machine, status))
     }
 
-    res <- callr::call_system(docker_machine, paste("env ", machine), stderr=FALSE)
+    res <- callr::call_system(docker_machine, paste("env ", machine),
+                              stderr=FALSE)
 
-    # Filter to lines containing `export`
-    res <- res[grep("export", res)]
+    ## Filter to lines containing `export`
+    re <- "^\\s*export\\s+"
+    res <- res[grep(re, res)]
     vars <- strsplit(sub("^\\s*export\\s+", "", res), "=", fixed=TRUE)
     if (!all(vapply(vars, length, integer(1)) == 2)) {
       stop("Unexpected output from docker-machine")
     }
 
-    var_name <- vapply(vars, function(x) x[[1]], character(1))
-    var_val  <- as.list(vapply(vars, function(x) x[[2]], character(1)))
+    strip_quotes <- function(x) {
+      gsub('(^"|"$)', "", x)
+    }
+    var_name <- vcapply(vars, function(x) x[[1]])
+    var_val  <- as.list(strip_quotes(vcapply(vars, function(x) x[[2]])))
 
     names(var_val) <- var_name
     do.call("Sys.setenv", var_val)
@@ -40,10 +47,14 @@ docker_machine_init <- function(machine="default") {
     if (Sys.getenv("DOCKER_HOST") == "") {
       stop("Failed to set docker_machine variables")
     }
+    tryCatch(callr::call_system(callr::Sys_which("docker"), "ps"),
+             error=function(e)
+               stop("While trying to test docker:\n", e$message))
   }
 }
 
-docker_build <- function(path, dockerfile, tagname, use_cache=TRUE, machine="default") {
+docker_build <- function(path, dockerfile, tagname, use_cache=TRUE,
+                         machine="default") {
   if (Sys.info()[["sysname"]] == "Darwin") {
     ## TODO: Also windows, apparently.
     ## TODO: Ability add option to pass in other machine names
@@ -58,6 +69,9 @@ docker_build <- function(path, dockerfile, tagname, use_cache=TRUE, machine="def
             "-t", tagname,
             if (!use_cache) "--no-cache",
             path)
+  docker <- callr::Sys_which("docker")
+  ## NOTE: Using system2 and *not* callr::call_system here because I
+  ## want the program output to be printed here.
   ok <- system2("docker", args)
   if (ok != 0L) {
     stop("Error running docker")
