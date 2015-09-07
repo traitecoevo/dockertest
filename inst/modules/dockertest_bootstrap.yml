@@ -1,6 +1,7 @@
 apt_packages:
   - curl
   - ca-certificates
+  - gfortran
   - git
   - libcurl4-openssl-dev
   - ssh
