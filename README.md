@@ -15,6 +15,23 @@ Below documentation is listed for *packages*, then for *projects*.  Below that i
 
 To run the material below you need to have [docker installed](http://docs.docker.com/installation/) and running.
 
+## Installing dockertest
+First install `callr`
+```
+devtools::install_github("traitecoevo/callr")
+callr::install("~/bin")
+```
+The second line copies the `callr` script to `~/bin`. However, this can be copied into anywhere in your $PATH.
+
+This allows using `callr` from the shell with:
+
+`callr myfile.json`
+or from your favourite other scripting language through their system interface.
+
+Now install `dockertest`
+```
+devtools::install_github("traitecoevo/dockertest")
+```
 
 ## Packages
 
@@ -28,13 +45,13 @@ repo
  +- DESCRIPTION
 ```
 
-Also add to your `.Rbuildignore` a line that says
+Create a file call `.Rbuildignore` and add a line that says
 
 ```
 ^docker$
 ```
 
-to keep `R CMD check` happy.  Then from within the `docker` directory run:
+This will keep `R CMD check` happy.  Then from within the `docker` directory open `R` and run:
 
 ```
 dockertest::build()
