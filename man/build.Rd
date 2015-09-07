@@ -4,7 +4,8 @@
 \alias{build}
 \title{Build a docker container}
 \usage{
-build(type = "test", prepare = TRUE, use_cache = TRUE)
+build(type = "test", prepare = TRUE, use_cache = TRUE,
+  machine = "default")
 }
 \arguments{
 \item{type}{Type of container to build.  Valid options are "test",
@@ -14,6 +15,8 @@ build(type = "test", prepare = TRUE, use_cache = TRUE)
 image?}
 
 \item{use_cache}{Set to FALSE to skip docker's cache}
+
+\item{machine}{name of docker machine to use}
 }
 \description{
 Build a docker container

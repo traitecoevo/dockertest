@@ -2,7 +2,7 @@ main <- function(args=commandArgs(TRUE)) {
   'Usage:
   dockertest prepare [<type>]
   dockertest build [<type>]
-  dockertest launch [<type>] [<opts> ...]' -> str
+  dockertest launch [<type>] [--dry-run] [<args> ...]' -> str
   opts <- docopt_parse(str, args)
   if (is.null(opts$type)) {
     opts$type <- "test"
@@ -12,7 +12,13 @@ main <- function(args=commandArgs(TRUE)) {
   } else if (isTRUE(opts$prepare)) {
     prepare(project_info(opts$type))
   } else if (isTRUE(opts$launch)) {
-    launch(opts$type, opts$opts)
+    if (opts$"dry-run") {
+      res <- suppressMessages(launch(opts$type, opts$args, dry_run=TRUE))
+      ## NOTE: Uses cat because that goes to stdout:
+      cat(res, "\n", sep="")
+    } else {
+      launch(opts$type, opts$args)
+    }
   } else {
     stop("Unimplemented command")
   }
@@ -45,9 +51,4 @@ install_script <- function(destination_directory, overwrite=FALSE) {
   dir.create(destination_directory, FALSE, TRUE)
   writeLines(script, file)
   Sys.chmod(file, "0755")
-}
-
-launch <- function(type, opts) {
-  info <- project_info(type)
-  system2(file.path(info$path_build, "launch.sh"), opts)
 }

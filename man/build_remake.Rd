@@ -4,7 +4,8 @@
 \alias{build_remake}
 \title{Build a docker container for a a remake project}
 \usage{
-build_remake(target = "clean", prepare = TRUE, use_cache = TRUE)
+build_remake(target = "clean", prepare = TRUE, use_cache = TRUE,
+  machine = "default")
 }
 \arguments{
 \item{target}{Target in remake to run.  This becomes the "type"
@@ -17,6 +18,8 @@ unpack the project but not run any remake target.}
 the image?}
 
 \item{use_cache}{Set to FALSE to skip docker's cache}
+
+\item{machine}{name of docker machine to use}
 }
 \description{
 Build a docker container for a a remake project

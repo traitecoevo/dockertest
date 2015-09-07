@@ -3,6 +3,7 @@
 export(build)
 export(build_remake)
 export(install_script)
+export(launch)
 export(prepare)
 export(prepare_remake)
 importFrom(callr,Sys_which)
