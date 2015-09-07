@@ -34,38 +34,7 @@ prepare <- function(type="test", machine="default", filename=NULL) {
   }
   format_docker(dockerfile_dockertest(info),
                 file.path(info$path_build, "Dockerfile"))
-  write_launch_script(info, machine)
   info
-}
-
-## TODO: Need to get the simple hooks in here when info$type is true:
-##   R (done)
-##   R_test (easy)
-##   bash (done)
-##   check
-##   test
-##   devtools_check
-write_launch_script <- function(info, machine="default") {
-  if (is_mac()) {
-    docker_machine <- sprintf("eval '$(docker-machine env %s)'", machine)
-  } else {
-    docker_machine <- NULL
-  }
-  if (info$local_filesystem) {
-    volume_map <- sprintf("-v %s:/src", info$path_project)
-  } else {
-    volume_map <- ""
-  }
-
-  dest <- file.path(info$path_build, "launch.sh")
-  str <- c("#!/bin/bash",
-           "set -e",
-           docker_machine,
-           sprintf("docker run %s -it %s $*", volume_map, info$tagname))
-  writeLines(str, dest)
-  Sys.chmod(dest, "0755")
-
-  invisible(NULL)
 }
 
 ## This one is used by dockertest to copy the contents of the scripts

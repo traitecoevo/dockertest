@@ -36,7 +36,6 @@ prepare_remake <- function(info) {
   }
   format_docker(dockerfile_remake(info), # different to prepare()
                 file.path(info$path_build, "Dockerfile"))
-  write_launch_script(info)
 }
 
 dockerfile_remake <- function(info) {
