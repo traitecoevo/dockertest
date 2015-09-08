@@ -26,7 +26,7 @@ docker_machine_init <- function(machine="default") {
     docker_machine <- callr::Sys_which("docker-machine")
     status <- callr::call_system(docker_machine, c("status", machine))
     if (!identical(status, "Running")) {
-      stop(sprintf("docker-machine %s not running? Status: %s",
+      stop(sprintf("docker-machine '%s' not running? Status: '%s'",
                    machine, status))
     }
 
