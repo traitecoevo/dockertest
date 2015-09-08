@@ -4,13 +4,14 @@
 \alias{prepare}
 \title{Prepare for docker build}
 \usage{
-prepare(type = "test", machine = "default", filename = NULL)
+prepare(type = "test", filename = NULL)
 }
 \arguments{
-\item{type}{Type of container to build.  Valid options are "test",}
-
-\item{machine}{name of docker machine to use
+\item{type}{Type of container to build.  Valid options are "test",
 "run" and "production" (last one only for packages).}
+
+\item{filename}{Full path to dockertest filename if not in the
+current directory or in the docker/ or dockertest/ directory.}
 }
 \description{
 Prepare for a build by writing a dockerfile and copying scripts

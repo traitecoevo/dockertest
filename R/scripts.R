@@ -1,14 +1,10 @@
 main <- function(args=commandArgs(TRUE)) {
-  'Usage:
-  dockertest prepare [<type>]
-  dockertest build [<type>]
-  dockertest launch [<type>] [--dry-run] [<args> ...]' -> str
-  opts <- docopt_parse(str, args)
+  opts <- parse_main_args(args)
   if (is.null(opts$type)) {
     opts$type <- "test"
   }
   if (isTRUE(opts$build)) {
-    build(opts$type)
+    build(opts$type, machine=opts$machine)
   } else if (isTRUE(opts$prepare)) {
     prepare(project_info(opts$type))
   } else if (isTRUE(opts$launch)) {
@@ -22,6 +18,18 @@ main <- function(args=commandArgs(TRUE)) {
   } else {
     stop("Unimplemented command")
   }
+}
+
+parse_main_args <- function(args) {
+  'Usage:
+  dockertest prepare [<type>]
+  dockertest build  [--machine=NAME] [<type>]
+  dockertest launch [--machine=NAME] [<type>] [--dry-run] [<args> ...]
+
+  Options:
+  --machine=NAME  docker machine name to use (non Linux) [default: default]
+  --dry-run       don\'t launch container but print command to do so' -> str
+  docopt_parse(str, args)
 }
 
 ##' @importFrom docopt docopt

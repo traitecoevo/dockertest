@@ -13,10 +13,16 @@ format_docker <- function(commands, filename=NULL) {
   str
 }
 
+##' Initialise environment variables to connect to a docker machine
+##'
+##' @title Connect to a docker machine
+##' @param machine Name of a machine
+##' @export
 ##' @importFrom callr Sys_which
 docker_machine_init <- function(machine="default") {
-  if (Sys.getenv("DOCKER_HOST") == "") {
-    message("Setting up docker-machine")
+  if (Sys.getenv("DOCKER_HOST") == "" ||
+      Sys.getenv("DOCKER_MACHINE_NAME") != machine) {
+    message(sprintf("Setting up docker-machine '%s'", machine))
     docker_machine <- callr::Sys_which("docker-machine")
     status <- callr::call_system(docker_machine, c("status", machine))
     if (!identical(status, "Running")) {

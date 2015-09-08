@@ -5,7 +5,7 @@
 \title{Build a docker container}
 \usage{
 build(type = "test", prepare = TRUE, use_cache = TRUE,
-  machine = "default")
+  machine = "default", filename = NULL)
 }
 \arguments{
 \item{type}{Type of container to build.  Valid options are "test",
@@ -17,6 +17,9 @@ image?}
 \item{use_cache}{Set to FALSE to skip docker's cache}
 
 \item{machine}{name of docker machine to use}
+
+\item{filename}{Full path to dockertest filename if not in the
+current directory or in the docker/ or dockertest/ directory.}
 }
 \description{
 Build a docker container

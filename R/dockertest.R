@@ -1,17 +1,20 @@
 ##' Build a docker container
 ##' @title Build a docker container
 ##' @param type Type of container to build.  Valid options are "test",
-##' "run" and "production" (last one only for packages).
+##'   "run" and "production" (last one only for packages).
+##' @param prepare Rerun \code{\link{prepare}} before building the
+##'   image?
 ##' @param use_cache Set to FALSE to skip docker's cache
 ##' @param machine name of docker machine to use
-##' @param prepare Rerun \code{\link{prepare}} before building the
-##' image?
+##' @param filename Full path to dockertest filename if not in the
+##'   current directory or in the docker/ or dockertest/ directory.
 ##' @export
-build <- function(type="test", prepare=TRUE, use_cache=TRUE, machine="default") {
+build <- function(type="test", prepare=TRUE, use_cache=TRUE,
+                  machine="default", filename=NULL) {
   if (prepare) {
-    info <- prepare(type, machine)
+    info <- prepare(type, filename)
   } else {
-    info <- project_info(type)
+    info <- project_info(type, filename)
   }
   dockerfile <- file.path(info$path_build, "Dockerfile")
   path <- if (info$inplace) info$path_project else "."
@@ -22,10 +25,11 @@ build <- function(type="test", prepare=TRUE, use_cache=TRUE, machine="default") 
 ##' into the build directory.
 ##' @title Prepare for docker build
 ##' @param type Type of container to build.  Valid options are "test",
-##' @param machine name of docker machine to use
-##' "run" and "production" (last one only for packages).
+##'   "run" and "production" (last one only for packages).
+##' @param filename Full path to dockertest filename if not in the
+##'   current directory or in the docker/ or dockertest/ directory.
 ##' @export
-prepare <- function(type="test", machine="default", filename=NULL) {
+prepare <- function(type="test", filename=NULL) {
   info <- project_info(type, filename)
   dir.create(info$path_build, FALSE, TRUE)
   clone_local(info)

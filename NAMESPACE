@@ -2,6 +2,7 @@
 
 export(build)
 export(build_remake)
+export(docker_machine_init)
 export(install_script)
 export(launch)
 export(prepare)
