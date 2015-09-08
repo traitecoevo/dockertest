@@ -9,7 +9,7 @@ main <- function(args=commandArgs(TRUE)) {
           use_cache=!opts$"no-cache",
           machine=opts$machine)
   } else if (isTRUE(opts$prepare)) {
-    prepare(project_info(opts$type))
+    invisible(prepare(opts$type))
   } else if (isTRUE(opts$launch)) {
     if (opts$"dry-run") {
       res <- suppressMessages(launch(opts$type, opts$args,
@@ -28,14 +28,19 @@ parse_main_args <- function(args) {
   'Usage:
   dockertest prepare [<type>]
   dockertest build  [--machine=NAME] [--no-prepare] [--no-cache] [<type>]
-  dockertest launch [--machine=NAME] [<type>] [--dry-run] [<args> ...]
+  dockertest launch [--machine=NAME] [--dry-run] [<type>] [--] [<args>...]
 
   Options:
   --machine=NAME  docker machine name to use (non Linux) [default: default]
   --no-prepare    don\'t reclone/recreate Dockerfile
   --no-cache      skip docker\'s cache on building
   --dry-run       don\'t launch container but print command to do so' -> str
-  docopt_parse(str, args)
+  res <- docopt_parse(str, args)
+  if (!isTRUE(res[["--"]]) && identical(res$type, "--")) {
+    res["type"] <- list(NULL)
+    res["--"] <- TRUE
+  }
+  res
 }
 
 ##' @importFrom docopt docopt
