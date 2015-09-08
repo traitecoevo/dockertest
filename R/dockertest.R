@@ -326,7 +326,12 @@ dockertest_names <- function(filename=NULL) {
 ##'   command string suitable for running in a separate script.
 ##' @param mount_volume Should a volume be mounted?  This generates
 ##'   the appropriate \emph{absolute} path name for a mapping.  By
-##'   default this is \code{TRUE} if the image requires it.
+##'   default this is \code{TRUE} if the image requires it.  If the
+##'   image is "inplace", the the mount will map the project root to
+##'   the docker working directory.  If not then it will mount the
+##'   `self` directory (a clean clone) into the place where that is
+##'   re-cloned into the container (therefore isolated from the
+##'   machine).  This behaviour may change.
 ##' @param machine Name of docker machine to use
 ##' @param name As an alternative to \code{type}, a full name can be
 ##'   given here, which dockertest will attempt to map onto a type.
@@ -357,7 +362,16 @@ launch <- function(type="test", args=NULL, interactive=TRUE, dry_run=FALSE,
     mount_volume <- info$local_filesystem
   }
   if (mount_volume) {
-    volume_map <- c("-v", sprintf("%s:/src", info$path_project))
+    if (info$inplace) {
+      src <- info$path_project
+      dest <- file.path("/root", info$name)
+    } else {
+      ## TODO: I don't know if this is always correct:
+      path_dockertest <- dirname(dockertest_path(filename, TRUE))
+      src <- file.path(getwd(), path_dockertest, "self")
+      dest <- "/src"
+    }
+    volume_map <- c("-v", sprintf("%s:%s", src, dest))
   } else {
     volume_map <- character(0)
   }
