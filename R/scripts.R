@@ -12,11 +12,12 @@ main <- function(args=commandArgs(TRUE)) {
     prepare(project_info(opts$type))
   } else if (isTRUE(opts$launch)) {
     if (opts$"dry-run") {
-      res <- suppressMessages(launch(opts$type, opts$args, dry_run=TRUE))
+      res <- suppressMessages(launch(opts$type, opts$args,
+                                     machine=opts$machine, dry_run=TRUE))
       ## NOTE: Uses cat because that goes to stdout:
       cat(res, "\n", sep="")
     } else {
-      launch(opts$type, opts$args)
+      launch(opts$type, opts$args, machine=opts$machine)
     }
   } else {
     stop("Unimplemented command")

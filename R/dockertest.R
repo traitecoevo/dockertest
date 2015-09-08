@@ -326,13 +326,15 @@ dockertest_names <- function(filename=NULL) {
 ##' @param mount_volume Should a volume be mounted?  This generates
 ##'   the appropriate \emph{absolute} path name for a mapping.  By
 ##'   default this is \code{TRUE} if the image requires it.
+##' @param machine Name of docker machine to use
 ##' @param name As an alternative to \code{type}, a full name can be
 ##'   given here, which dockertest will attempt to map onto a type.
 ##' @param filename Optional filename used when \code{name} is given;
 ##'   only needed if \code{dockertest.yml} is hard to find.
 ##' @export
 launch <- function(type="test", args=NULL, interactive=TRUE, dry_run=FALSE,
-                   mount_volume=NULL, name=NULL, filename=NULL) {
+                   mount_volume=NULL, machine="default",
+                   name=NULL, filename=NULL) {
   if (!is.null(name)) {
     if (!missing(type)) {
       stop("If name is given, type must be empty")
@@ -344,7 +346,9 @@ launch <- function(type="test", args=NULL, interactive=TRUE, dry_run=FALSE,
     }
     type <- names(nms)[[i]]
   }
-  docker_machine_init()
+  if (!dry_run) {
+    docker_machine_init(machine)
+  }
   docker <- callr::Sys_which("docker")
   info <- project_info(type)
 
