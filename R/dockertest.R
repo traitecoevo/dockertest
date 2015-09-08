@@ -223,10 +223,11 @@ add_modules <- function(info) {
     return(info)
   }
 
-  modules_files <- paste0(modules, ".yml")
+  modules_files <- sprintf("dockertest_%s.yml", modules)
   ok <- file.exists(modules_files)
   if (any(!ok)) {
-    modules_files[!ok] <- system.file(file.path("modules", modules_files[!ok]),
+    tmp <- file.path("modules", paste0(modules[!ok], ".yml"))
+    modules_files[!ok] <- system.file(tmp,
                                       package="dockertest",
                                       mustWork=TRUE)
   }
