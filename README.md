@@ -16,17 +16,12 @@ Below documentation is listed for *packages*, then for *projects*.  Below that i
 To run the material below you need to have [docker installed](http://docs.docker.com/installation/) and running.
 
 ## Installing dockertest
-First install `callr`
+
+Dockertest depends on our package `callr`, which is also not on CRAN, so install that first with `devtools`
+
 ```
 devtools::install_github("traitecoevo/callr")
-callr::install("~/bin")
 ```
-The second line copies the `callr` script to `~/bin`. However, this can be copied into anywhere in your $PATH.
-
-This allows using `callr` from the shell with:
-
-`callr myfile.json`
-or from your favourite other scripting language through their system interface.
 
 Now install `dockertest`
 ```
