@@ -5,7 +5,8 @@
 \title{Launch a docker container}
 \usage{
 launch(type = "test", args = NULL, interactive = TRUE, dry_run = FALSE,
-  mount_volume = NULL, name = NULL, filename = NULL)
+  mount_volume = NULL, machine = "default", name = NULL,
+  filename = NULL)
 }
 \arguments{
 \item{type}{Type of container to run (as for \code{link{build}}.
@@ -27,6 +28,8 @@ command string suitable for running in a separate script.}
 \item{mount_volume}{Should a volume be mounted?  This generates
 the appropriate \emph{absolute} path name for a mapping.  By
 default this is \code{TRUE} if the image requires it.}
+
+\item{machine}{Name of docker machine to use}
 
 \item{name}{As an alternative to \code{type}, a full name can be
 given here, which dockertest will attempt to map onto a type.}
