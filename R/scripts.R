@@ -1,21 +1,46 @@
 main <- function(args=commandArgs(TRUE)) {
-  'Usage:
-  dockertest prepare [<type>]
-  dockertest build [<type>]
-  dockertest launch [<type>] [<opts> ...]' -> str
-  opts <- docopt_parse(str, args)
+  opts <- parse_main_args(args)
   if (is.null(opts$type)) {
     opts$type <- "test"
   }
   if (isTRUE(opts$build)) {
-    build(opts$type)
+    build(opts$type,
+          prepare=!opts$"no-prepare",
+          use_cache=!opts$"no-cache",
+          machine=opts$machine)
   } else if (isTRUE(opts$prepare)) {
-    prepare(project_info(opts$type))
+    invisible(prepare(opts$type))
   } else if (isTRUE(opts$launch)) {
-    launch(opts$type, opts$opts)
+    if (opts$"dry-run") {
+      res <- suppressMessages(launch(opts$type, opts$args,
+                                     machine=opts$machine, dry_run=TRUE))
+      ## NOTE: Uses cat because that goes to stdout:
+      cat(res, "\n", sep="")
+    } else {
+      launch(opts$type, opts$args, machine=opts$machine)
+    }
   } else {
     stop("Unimplemented command")
   }
+}
+
+parse_main_args <- function(args) {
+  'Usage:
+  dockertest prepare [<type>]
+  dockertest build  [--machine=NAME] [--no-prepare] [--no-cache] [<type>]
+  dockertest launch [--machine=NAME] [--dry-run] [<type>] [--] [<args>...]
+
+  Options:
+  --machine=NAME  docker machine name to use (non Linux) [default: default]
+  --no-prepare    don\'t reclone/recreate Dockerfile
+  --no-cache      skip docker\'s cache on building
+  --dry-run       don\'t launch container but print command to do so' -> str
+  res <- docopt_parse(str, args)
+  if (!isTRUE(res[["--"]]) && identical(res$type, "--")) {
+    res["type"] <- list(NULL)
+    res["--"] <- TRUE
+  }
+  res
 }
 
 ##' @importFrom docopt docopt
@@ -45,9 +70,4 @@ install_script <- function(destination_directory, overwrite=FALSE) {
   dir.create(destination_directory, FALSE, TRUE)
   writeLines(script, file)
   Sys.chmod(file, "0755")
-}
-
-launch <- function(type, opts) {
-  info <- project_info(type)
-  system2(file.path(info$path_build, "launch.sh"), opts)
 }

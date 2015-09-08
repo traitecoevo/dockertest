@@ -1,30 +1,36 @@
 ##' Build a docker container
 ##' @title Build a docker container
 ##' @param type Type of container to build.  Valid options are "test",
-##' "run" and "production" (last one only for packages).
-##' @param use_cache Set to FALSE to skip docker's cache
+##'   "run" and "production" (last one only for packages).
 ##' @param prepare Rerun \code{\link{prepare}} before building the
-##' image?
+##'   image?
+##' @param use_cache Set to FALSE to skip docker's cache
+##' @param machine name of docker machine to use
+##' @param filename Full path to dockertest filename if not in the
+##'   current directory or in the docker/ or dockertest/ directory.
 ##' @export
-build <- function(type="test", prepare=TRUE, use_cache=TRUE) {
+build <- function(type="test", prepare=TRUE, use_cache=TRUE,
+                  machine="default", filename=NULL) {
   if (prepare) {
-    info <- prepare(type)
+    info <- prepare(type, filename)
   } else {
-    info <- project_info(type)
+    info <- project_info(type, filename)
   }
   dockerfile <- file.path(info$path_build, "Dockerfile")
   path <- if (info$inplace) info$path_project else "."
-  docker_build(path, dockerfile, info$tagname, use_cache)
+  docker_build(path, dockerfile, info$tagname, use_cache, machine)
 }
 
 ##' Prepare for a build by writing a dockerfile and copying scripts
 ##' into the build directory.
 ##' @title Prepare for docker build
 ##' @param type Type of container to build.  Valid options are "test",
-##' "run" and "production" (last one only for packages).
+##'   "run" and "production" (last one only for packages).
+##' @param filename Full path to dockertest filename if not in the
+##'   current directory or in the docker/ or dockertest/ directory.
 ##' @export
-prepare <- function(type="test") {
-  info <- project_info(type)
+prepare <- function(type="test", filename=NULL) {
+  info <- project_info(type, filename)
   dir.create(info$path_build, FALSE, TRUE)
   clone_local(info)
   if (!info$inplace) {
@@ -32,38 +38,7 @@ prepare <- function(type="test") {
   }
   format_docker(dockerfile_dockertest(info),
                 file.path(info$path_build, "Dockerfile"))
-  write_launch_script(info)
   info
-}
-
-## TODO: Need to get the simple hooks in here when info$type is true:
-##   R (done)
-##   R_test (easy)
-##   bash (done)
-##   check
-##   test
-##   devtools_check
-write_launch_script <- function(info) {
-  if (is_mac()) {
-    boot2docker <- "$(boot2docker shellinit 2> /dev/null)"
-  } else {
-    boot2docker <- NULL
-  }
-  if (info$local_filesystem) {
-    volume_map <- sprintf("-v %s:/src", info$path_project)
-  } else {
-    volume_map <- ""
-  }
-
-  dest <- file.path(info$path_build, "launch.sh")
-  str <- c("#!/bin/bash",
-           "set -e",
-           boot2docker,
-           sprintf("docker run %s -it %s $*", volume_map, info$tagname))
-  writeLines(str, dest)
-  Sys.chmod(dest, "0755")
-
-  invisible(NULL)
 }
 
 ## This one is used by dockertest to copy the contents of the scripts
@@ -119,7 +94,9 @@ clone_self <- function(info) {
 ## TODO: The line here between "config" and "info" is now totally
 ## stuffed, so just copy all the config stuff directly into list and
 ## nuke any mentions of info$config.
-project_info <- function(type, path_project=NULL) {
+project_info <- function(type, path_project=NULL, filename=NULL) {
+  filename <- dockertest_path(filename, error=FALSE)
+
   path_project <- find_project_root(path_project)
   path_package <- find_package_root(NULL, path_project, error=FALSE)
   is_package <- !is.null(path_package)
@@ -137,8 +114,7 @@ project_info <- function(type, path_project=NULL) {
               local_filesystem=type == "test",
               keep_git=FALSE)
   ret$install_package <- is_package && type != "test"
-
-  ret$config <- load_config(ret$path_project)
+  ret$config <- load_config(filename)
 
   ## If we install the package, this needs overriding, regardless of
   ## what it was set as in the config.
@@ -185,9 +161,9 @@ project_info <- function(type, path_project=NULL) {
 }
 
 ## No validation here yet.
-load_config <- function(path_project=NULL) {
+load_config <- function(filename=NULL) {
   ## We'll look in the local directory and in the package root.
-  config_file <- "dockertest.yml"
+  filename <- dockertest_path(filename, error=FALSE)
   defaults <- list(
     ## Image to build from:
     image="r-base",
@@ -207,8 +183,8 @@ load_config <- function(path_project=NULL) {
     inplace=FALSE,
     ## Don't include the sources of this package
     deps_only=TRUE)
-  if (file.exists(config_file)) {
-    ret <- yaml_read(config_file)
+  if (!is.null(filename) && file.exists(filename)) {
+    ret <- yaml_read(filename)
     ret <- modifyList(defaults, ret)
   } else {
     ret <- defaults
@@ -247,10 +223,11 @@ add_modules <- function(info) {
     return(info)
   }
 
-  modules_files <- paste0(modules, ".yml")
+  modules_files <- sprintf("dockertest_%s.yml", modules)
   ok <- file.exists(modules_files)
   if (any(!ok)) {
-    modules_files[!ok] <- system.file(file.path("modules", modules_files[!ok]),
+    tmp <- file.path("modules", paste0(modules[!ok], ".yml"))
+    modules_files[!ok] <- system.file(tmp,
                                       package="dockertest",
                                       mustWork=TRUE)
   }
@@ -289,4 +266,126 @@ read_module <- function(filename) {
             immediate.=TRUE)
   }
   dat
+}
+
+
+dockertest_path <- function(filename=NULL, error=TRUE) {
+  if (is.null(filename)) {
+    filename <- "dockertest.yml"
+    ## In descending order of preference:
+    paths <- file.path(c(".", "dockertest", "docker"), filename)
+    for (p in paths) {
+      if (file.exists(p)) {
+        return(p)
+      }
+    }
+  } else {
+    if (file.exists(filename)) {
+      return(filename)
+    }
+  }
+
+  if (error) {
+    stop("Did not find file: ", filename)
+  } else {
+    NULL
+  }
+}
+
+dockertest_names <- function(filename=NULL) {
+  filename <- dockertest_path(filename, FALSE)
+  res <- setNames(character(0), character(0))
+  if (!is.null(filename)) {
+    dat <- yaml_read(filename)
+    if (!is.null(dat$names)) {
+      res <- unlist(dat$names)
+    }
+  }
+  res
+}
+
+##' Launches a docker container that was created by dockertest.
+##'
+##' Note that this is the worst sort of function; the output totally
+##' changes depending on what mode it is in.  It will either run a
+##' function or it will print what it \emph{would} run so that that
+##' command can be used elsewhere.
+##'
+##' @title Launch a docker container
+##' @param type Type of container to run (as for \code{link{build}}.
+##'   "run" and "production" (last one only for packages).
+##' @param args Additional arguments to pass through to docker.  As
+##'   it's not totally transparent what arguments dockertest will
+##'   inject, this should really be (optionally) things like the name
+##'   of the program to run within a container.
+##' @param interactive Should the container be interactive and
+##'   allocate a pseudo-tty?  The default is \code{TRUE} because it is
+##'   possible to lock your console hard if you set this to
+##'   \code{FALSE} when input is needed.
+##' @param dry_run Rather than actually run the command, return the
+##'   command string suitable for running in a separate script.
+##' @param mount_volume Should a volume be mounted?  This generates
+##'   the appropriate \emph{absolute} path name for a mapping.  By
+##'   default this is \code{TRUE} if the image requires it.  If the
+##'   image is "inplace", the the mount will map the project root to
+##'   the docker working directory.  If not then it will mount the
+##'   `self` directory (a clean clone) into the place where that is
+##'   re-cloned into the container (therefore isolated from the
+##'   machine).  This behaviour may change.
+##' @param machine Name of docker machine to use
+##' @param name As an alternative to \code{type}, a full name can be
+##'   given here, which dockertest will attempt to map onto a type.
+##' @param filename Optional filename used when \code{name} is given;
+##'   only needed if \code{dockertest.yml} is hard to find.
+##' @export
+launch <- function(type="test", args=NULL, interactive=TRUE, dry_run=FALSE,
+                   mount_volume=NULL, machine="default",
+                   name=NULL, filename=NULL) {
+  if (!is.null(name)) {
+    if (!missing(type)) {
+      stop("If name is given, type must be empty")
+    }
+    nms <- dockertest_names(filename)
+    i <- match(name, nms)
+    if (is.na(i)) {
+      stop(sprintf("Name %s not found", name))
+    }
+    type <- names(nms)[[i]]
+  }
+  if (!dry_run) {
+    docker_machine_init(machine)
+  }
+  docker <- callr::Sys_which("docker")
+  info <- project_info(type)
+
+  if (is.null(mount_volume)) {
+    mount_volume <- info$local_filesystem
+  }
+  if (mount_volume) {
+    if (info$inplace) {
+      src <- info$path_project
+      dest <- file.path("/root", info$name)
+    } else {
+      ## TODO: I don't know if this is always correct:
+      path_dockertest <- dirname(dockertest_path(filename, TRUE))
+      src <- file.path(getwd(), path_dockertest, "self")
+      dest <- "/src"
+    }
+    volume_map <- c("-v", sprintf("%s:%s", src, dest))
+  } else {
+    volume_map <- character(0)
+  }
+  if (interactive) {
+    interactive <- "-it"
+  } else {
+    interactive <- character(0)
+  }
+  args <- c("run", volume_map, interactive, info$tagname, args)
+
+  ## NOTE: Not using callr here because I need i/o
+  if (dry_run) {
+    paste(c(docker, args), collapse = " ")
+  } else {
+    system2(docker, args)
+  }
 }

@@ -8,15 +8,16 @@
 ##' @param prepare Rerun \code{\link{prepare_remake}} before building
 ##' the image?
 ##' @param use_cache Set to FALSE to skip docker's cache
+##' @param machine name of docker machine to use
 ##' @export
-build_remake <- function(target="clean", prepare=TRUE, use_cache=TRUE) {
+build_remake <- function(target="clean", prepare=TRUE, use_cache=TRUE, machine="default") {
   info <- project_info_remake(target)
   if (prepare) {
     prepare_remake(info)
   }
   dockerfile <- file.path(info$path_build, "Dockerfile")
   path <- if (info$inplace) info$path_project else "."
-  docker_build(path, dockerfile, info$tagname, use_cache)
+  docker_build(path, dockerfile, info$tagname, use_cache, machine)
 }
 
 ##' Prepare for a build by writing a dockerfile and copying scripts
@@ -35,7 +36,6 @@ prepare_remake <- function(info) {
   }
   format_docker(dockerfile_remake(info), # different to prepare()
                 file.path(info$path_build, "Dockerfile"))
-  write_launch_script(info)
 }
 
 dockerfile_remake <- function(info) {
