@@ -12,12 +12,15 @@ main <- function(args=commandArgs(TRUE)) {
     invisible(prepare(opts$type))
   } else if (isTRUE(opts$launch)) {
     if (opts$"dry-run") {
-      res <- suppressMessages(launch(opts$type, opts$args,
-                                     machine=opts$machine, dry_run=TRUE))
+      res <- suppressMessages(launch(opts$type,
+                                     opts$args,
+                                     machine=opts$machine,
+                                     dry_run=TRUE,
+                                     link=opts$link))
       ## NOTE: Uses cat because that goes to stdout:
       cat(res, "\n", sep="")
     } else {
-      launch(opts$type, opts$args, machine=opts$machine)
+      launch(opts$type, opts$args, machine=opts$machine, link=opts$link)
     }
   } else {
     stop("Unimplemented command")
@@ -28,12 +31,13 @@ parse_main_args <- function(args) {
   'Usage:
   dockertest prepare [<type>]
   dockertest build  [--machine=NAME] [--no-prepare] [--no-cache] [<type>]
-  dockertest launch [--machine=NAME] [--dry-run] [<type>] [--] [<args>...]
+  dockertest launch [--machine=NAME] [--link LINK...] [--dry-run] [<type>] [--] [<args>...]
 
   Options:
   --machine=NAME  docker machine name to use (non Linux) [default: default]
   --no-prepare    don\'t reclone/recreate Dockerfile
   --no-cache      skip docker\'s cache on building
+  --link LINK     passed to docker\'s --link option
   --dry-run       don\'t launch container but print command to do so' -> str
   res <- docopt_parse(str, args)
   if (!isTRUE(res[["--"]]) && identical(res$type, "--")) {

@@ -333,13 +333,14 @@ dockertest_names <- function(filename=NULL) {
 ##'   re-cloned into the container (therefore isolated from the
 ##'   machine).  This behaviour may change.
 ##' @param machine Name of docker machine to use
+##' @param link Vector of links (e.g. \code{mycontainer:redis})
 ##' @param name As an alternative to \code{type}, a full name can be
 ##'   given here, which dockertest will attempt to map onto a type.
 ##' @param filename Optional filename used when \code{name} is given;
 ##'   only needed if \code{dockertest.yml} is hard to find.
 ##' @export
 launch <- function(type="test", args=NULL, interactive=TRUE, dry_run=FALSE,
-                   mount_volume=NULL, machine="default",
+                   mount_volume=NULL, machine="default", link=NULL,
                    name=NULL, filename=NULL) {
   if (!is.null(name)) {
     if (!missing(type)) {
@@ -380,7 +381,10 @@ launch <- function(type="test", args=NULL, interactive=TRUE, dry_run=FALSE,
   } else {
     interactive <- character(0)
   }
-  args <- c("run", volume_map, interactive, info$tagname, args)
+  if (!is.null(link)) {
+    link <- as.character(rbind("--link", link))
+  }
+  args <- c("run", link, volume_map, interactive, info$tagname, args)
 
   ## NOTE: Not using callr here because I need i/o
   if (dry_run) {
