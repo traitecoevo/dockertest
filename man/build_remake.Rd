@@ -5,7 +5,7 @@
 \title{Build a docker container for a a remake project}
 \usage{
 build_remake(target = "clean", prepare = TRUE, use_cache = TRUE,
-  machine = "default")
+  machine = NULL)
 }
 \arguments{
 \item{target}{Target in remake to run.  This becomes the "type"

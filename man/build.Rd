@@ -4,8 +4,8 @@
 \alias{build}
 \title{Build a docker container}
 \usage{
-build(type = "test", prepare = TRUE, use_cache = TRUE,
-  machine = "default", filename = NULL)
+build(type = "test", prepare = TRUE, use_cache = TRUE, machine = NULL,
+  filename = NULL)
 }
 \arguments{
 \item{type}{Type of container to build.  Valid options are "test",

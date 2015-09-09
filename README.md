@@ -103,8 +103,10 @@ to build an image that contains project dependencies, and clones your project in
 If you are running docker via docker-machine and want to use something other than the default machine, you can specify the machine name in an argument
 
 ```
-dockertest::build(machine = "default")
+dockertest::build(machine = "mymachine")
 ```
+
+If `machine` is missing (or `NULL`) the first running machine listed by `docker-machine ls`, or a machine set up with `docker-machine env` is used.
 
 The dockerfile to create the image will be in `<package_name>-test/Dockerfile` and a script `<package_name>-test/launch.sh` is created.
 

@@ -5,7 +5,7 @@
 \title{Launch a docker container}
 \usage{
 launch(type = "test", args = NULL, interactive = TRUE, dry_run = FALSE,
-  mount_volume = NULL, machine = "default", name = NULL,
+  mount_volume = NULL, machine = NULL, link = NULL, name = NULL,
   filename = NULL)
 }
 \arguments{
@@ -27,9 +27,16 @@ command string suitable for running in a separate script.}
 
 \item{mount_volume}{Should a volume be mounted?  This generates
 the appropriate \emph{absolute} path name for a mapping.  By
-default this is \code{TRUE} if the image requires it.}
+default this is \code{TRUE} if the image requires it.  If the
+image is "inplace", the the mount will map the project root to
+the docker working directory.  If not then it will mount the
+`self` directory (a clean clone) into the place where that is
+re-cloned into the container (therefore isolated from the
+machine).  This behaviour may change.}
 
 \item{machine}{Name of docker machine to use}
+
+\item{link}{Vector of links (e.g. \code{mycontainer:redis})}
 
 \item{name}{As an alternative to \code{type}, a full name can be
 given here, which dockertest will attempt to map onto a type.}

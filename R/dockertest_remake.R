@@ -10,7 +10,8 @@
 ##' @param use_cache Set to FALSE to skip docker's cache
 ##' @param machine name of docker machine to use
 ##' @export
-build_remake <- function(target="clean", prepare=TRUE, use_cache=TRUE, machine="default") {
+build_remake <- function(target="clean", prepare=TRUE, use_cache=TRUE,
+                         machine=NULL) {
   info <- project_info_remake(target)
   if (prepare) {
     prepare_remake(info)

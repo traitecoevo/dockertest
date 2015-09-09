@@ -19,9 +19,9 @@ format_docker <- function(commands, filename=NULL) {
 ##' @param machine Name of a machine
 ##' @export
 ##' @importFrom callr Sys_which
-docker_machine_init <- function(machine="default") {
-  if (Sys.getenv("DOCKER_HOST") == "" ||
-      Sys.getenv("DOCKER_MACHINE_NAME") != machine) {
+docker_machine_init <- function(machine=NULL) {
+  machine <- docker_machine_init_which(machine)
+  if (!is.null(machine)) {
     message(sprintf("Setting up docker-machine '%s'", machine))
     docker_machine <- callr::Sys_which("docker-machine")
     status <- callr::call_system(docker_machine, c("status", machine))
@@ -59,8 +59,26 @@ docker_machine_init <- function(machine="default") {
   }
 }
 
+docker_machine_init_which <- function(machine) {
+  if (Sys.getenv("DOCKER_HOST") == "") {
+    docker_machine <- callr::Sys_which("docker-machine")
+    args <- c("ls", "-q", "--filter", "state=Running")
+    machines <- callr::call_system(docker_machine, args)
+    if (length(machines) < 1L) {
+      stop("No running docker machines detected")
+    } else if (length(machines) > 1L) {
+      message("More than one machine present, taking the first")
+    }
+    machines[[1]]
+  } else if (!is.null(machine) && Sys.getenv("DOCKER_MACHINE_NAME") != machine) {
+    machine
+  } else {
+    NULL
+  }
+}
+
 docker_build <- function(path, dockerfile, tagname, use_cache=TRUE,
-                         machine="default") {
+                         machine=NULL) {
   if (Sys.info()[["sysname"]] == "Darwin") {
     ## TODO: Also windows, apparently.
     docker_machine_init(machine)
@@ -84,7 +102,7 @@ docker_build <- function(path, dockerfile, tagname, use_cache=TRUE,
   message("Created image ", tagname)
 }
 
-docker_image_id <- function(name, machine="default") {
+docker_image_id <- function(name, machine=NULL) {
   if (Sys.info()[["sysname"]] == "Darwin") {
     ## TODO: Also windows, apparently.
     docker_machine_init(machine)

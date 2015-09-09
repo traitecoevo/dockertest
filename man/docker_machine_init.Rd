@@ -4,7 +4,7 @@
 \alias{docker_machine_init}
 \title{Connect to a docker machine}
 \usage{
-docker_machine_init(machine = "default")
+docker_machine_init(machine = NULL)
 }
 \arguments{
 \item{machine}{Name of a machine}

@@ -10,7 +10,7 @@
 ##'   current directory or in the docker/ or dockertest/ directory.
 ##' @export
 build <- function(type="test", prepare=TRUE, use_cache=TRUE,
-                  machine="default", filename=NULL) {
+                  machine=NULL, filename=NULL) {
   if (prepare) {
     info <- prepare(type, filename)
   } else {
@@ -342,7 +342,7 @@ dockertest_names <- function(filename=NULL) {
 ##'   only needed if \code{dockertest.yml} is hard to find.
 ##' @export
 launch <- function(type="test", args=NULL, interactive=TRUE, dry_run=FALSE,
-                   mount_volume=NULL, machine="default", link=NULL,
+                   mount_volume=NULL, machine=NULL, link=NULL,
                    name=NULL, filename=NULL) {
   if (!is.null(name)) {
     if (!missing(type)) {
