@@ -63,7 +63,6 @@ docker_build <- function(path, dockerfile, tagname, use_cache=TRUE,
                          machine="default") {
   if (Sys.info()[["sysname"]] == "Darwin") {
     ## TODO: Also windows, apparently.
-    ## TODO: Ability add option to pass in other machine names
     docker_machine_init(machine)
   }
 
@@ -83,6 +82,15 @@ docker_build <- function(path, dockerfile, tagname, use_cache=TRUE,
     stop("Error running docker")
   }
   message("Created image ", tagname)
+}
+
+docker_image_id <- function(name, machine="default") {
+  if (Sys.info()[["sysname"]] == "Darwin") {
+    ## TODO: Also windows, apparently.
+    docker_machine_init(machine)
+  }
+  docker <- callr::Sys_which("docker")
+  callr::call_system(docker, c("images", "--no-trunc", "-q", name))
 }
 
 docker_join <- function(x, list=TRUE, sort=list) {

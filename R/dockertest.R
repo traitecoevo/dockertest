@@ -19,6 +19,8 @@ build <- function(type="test", prepare=TRUE, use_cache=TRUE,
   dockerfile <- file.path(info$path_build, "Dockerfile")
   path <- if (info$inplace) info$path_project else "."
   docker_build(path, dockerfile, info$tagname, use_cache, machine)
+  list(name=info$tagname,
+       id=docker_image_id(info$tagname, machine=machine))
 }
 
 ##' Prepare for a build by writing a dockerfile and copying scripts
