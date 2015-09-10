@@ -34,7 +34,7 @@ parse_main_args <- function(args) {
   dockertest launch [--machine=NAME] [--link LINK...] [--dry-run] [<type>] [--] [<args>...]
 
   Options:
-  --machine=NAME  docker machine name to use (non Linux) [default: default]
+  --machine=NAME  docker machine name to use (non Linux)
   --no-prepare    don\'t reclone/recreate Dockerfile
   --no-cache      skip docker\'s cache on building
   --link LINK     passed to docker\'s --link option
