@@ -183,7 +183,6 @@ deps_apt_packages <- function(package_names, package_info, info) {
   sys_reqs$resolved
 }
 
-##' @importFrom downloader download
 deps_github_fetch <- function(repos, expire=1) {
   dir.create(deps_github_paths(""), FALSE, TRUE)
   fmt <- "https://raw.githubusercontent.com/%s/master/DESCRIPTION"
@@ -201,8 +200,8 @@ deps_github_fetch <- function(repos, expire=1) {
     }
     dir.create(path_r, FALSE, TRUE)
     message("Fetching DESCRIPTION for ", r)
-    ok <- try(downloader::download(sprintf(fmt, r),
-                                   dest_r, quiet=TRUE))
+    url <- sprintf(fmt, r)
+    download_safely(sprintf(fmt, r), dest_r)
   }
 }
 

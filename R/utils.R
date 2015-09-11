@@ -126,3 +126,27 @@ git_clone <- function(repo, dest, quiet=FALSE, shallow=FALSE) {
 vcapply <- function(X, FUN, ...) {
   vapply(X, FUN, character(1), ...)
 }
+
+download_safely <- function(url, dest) {
+  dest_tmp <- try(download_file(url))
+  if (inherits(dest_tmp, "try-error")) {
+    message(sprintf("Error downloading %s: %s",
+                    url, attr(dest_tmp, "condition")$message))
+  } else {
+    file.rename(dest_tmp, dest)
+  }
+}
+
+## NOTE: duplicated from storr; replace with code from storr if it
+## becomes a dependency.
+download_file <- function(url, dest=tempfile(), overwrite=FALSE) {
+  oo <- options(warnPartialMatchArgs = FALSE)
+  if (isTRUE(oo$warnPartialMatchArgs)) {
+    on.exit(options(oo))
+  }
+  content <- httr::GET(url, httr::write_disk(dest, overwrite))
+  if (httr::status_code(content) != 200L) {
+    stop(DownloadError(content))
+  }
+  dest
+}
