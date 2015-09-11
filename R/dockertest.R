@@ -113,8 +113,7 @@ project_info <- function(type, path_project=NULL, filename=NULL) {
               path_project=path_project,
               path_package=path_package,
               is_package=is_package,
-              local_filesystem=type == "test",
-              keep_git=FALSE)
+              local_filesystem=type == "test")
   ret$install_package <- is_package && type != "test"
   ret$config <- load_config(filename)
 
@@ -136,6 +135,16 @@ project_info <- function(type, path_project=NULL, filename=NULL) {
     ret$tagname <- ret$config[["names"]][[type]]
   } else {
     ret$tagname <- sprintf("dockertest/%s-%s", tolower(name), tolower(type))
+  }
+
+  if (is.null(ret$config$workdir)) {
+    if (ret$install_package && ret$is_package) {
+      ret$workdir <- "/root"
+    } else {
+      ret$workdir <- file.path("/root", ret$name)
+    }
+  } else {
+    ret$workdir <- ret$config$workdir
   }
 
   ret$inplace <- ret$config$inplace
@@ -177,23 +186,37 @@ load_config <- function(filename=NULL) {
     r_packages=NULL,
     r_github_packages=NULL,
     r_local_packages=NULL,
+    modules=NULL,
     ## Packages to ignore system dependencies from:
     system_ignore_packages=NULL,
     ## Tag names for generated images:
     names=NULL,
+    ## Don't set a workdir by default; changes a number of things in
+    ## ways that will be tricky to deal with.
+    workdir=NULL,
     ## I'm not really sure anymore
     inplace=FALSE,
+    ## Keep '.git' directories in clones (costs some space)
+    keep_git=FALSE,
     ## Don't include the sources of this package
     deps_only=TRUE)
   if (!is.null(filename) && file.exists(filename)) {
     ret <- yaml_read(filename)
+    extra <- setdiff(names(ret), names(defaults))
+    if (length(extra) > 0L) {
+      msg <- sprintf("Unknown fields in %s: %s", filename,
+                     paste(extra, collapse = ", "))
+      warning(msg)
+    }
     ret <- modifyList(defaults, ret)
   } else {
     ret <- defaults
   }
-  ## Always include the "dockertest_bootstrap" module which includes
-  ## dependencies needed to get started...
+  ## *Always* include the "dockertest_bootstrap" module which includes
+  ## dependencies needed to get started.  Ideally we'd prevent this
+  ## from being overwritable but that doesn't seem worthwhile.
   ret$modules <- union("dockertest_bootstrap", ret$modules)
+
   ret
 }
 
@@ -367,7 +390,7 @@ launch <- function(type="test", args=NULL, interactive=TRUE, dry_run=FALSE,
   if (mount_volume) {
     if (info$inplace) {
       src <- info$path_project
-      dest <- file.path("/root", info$name)
+      dest <- info$workdir
     } else {
       ## TODO: I don't know if this is always correct:
       path_dockertest <- dirname(dockertest_path(filename, TRUE))

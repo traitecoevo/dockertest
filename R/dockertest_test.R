@@ -3,7 +3,7 @@ dockerfile_dockertest <- function(info) {
 
   info <- add_project_deps(info)
   deps <- dockertest_dependencies(info)
-  path <- file.path("/root", info$name)
+  path <- info$workdir
 
   copy_sources <- docker_copy_sources(path,
                                       info$local_filesystem,
@@ -19,12 +19,10 @@ dockerfile_dockertest <- function(info) {
                       docker_RUN(c(paste("R CMD INSTALL", path),
                                    paste("rm -rf", path))),
                       info$post_install)
-    workdir <- "/root"
   } else {
     post_install <- c(list(),
                       copy_sources,
                       info$post_install)
-    workdir <- path
   }
 
   if (is.null(deps$r_local_packages)) {
@@ -47,7 +45,7 @@ dockerfile_dockertest <- function(info) {
     docker_install_local(local_paths),
     commands_after$r_local_packages,
     post_install,
-    docker_WORKDIR(workdir),
+    docker_WORKDIR(path),
     commands_after$workdir,
     docker_CMD("bash"))
 }

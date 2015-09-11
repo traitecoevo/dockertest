@@ -54,7 +54,7 @@ dockerfile_remake_clean <- function(info) {
     workdir <- file.path(info$name, info$path_remake)
   }
 
-  path <- file.path("/root", info$name)
+  path <- info$workdir
   copy_sources <- docker_copy_sources(path,
                                       info$local_filesystem,
                                       info$path_self)
