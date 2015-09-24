@@ -191,6 +191,8 @@ load_config <- function(filename=NULL) {
     system_ignore_packages=NULL,
     ## Tag names for generated images:
     names=NULL,
+    ## Additional commands
+    commands=NULL,
     ## Don't set a workdir by default; changes a number of things in
     ## ways that will be tricky to deal with.
     workdir=NULL,
