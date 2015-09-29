@@ -3,7 +3,9 @@ main <- function(args=commandArgs(TRUE)) {
   if (is.null(opts$type)) {
     opts$type <- "test"
   }
-  if (isTRUE(opts$build)) {
+  if (isTRUE(opts$version)) {
+    message(packageVersion("dockertest"))
+  } else if (isTRUE(opts$build)) {
     build(opts$type,
           prepare=!opts$"no-prepare",
           use_cache=!opts$"no-cache",
@@ -32,13 +34,15 @@ parse_main_args <- function(args) {
   dockertest prepare [<type>]
   dockertest build  [--machine=NAME] [--no-prepare] [--no-cache] [<type>]
   dockertest launch [--machine=NAME] [--link LINK...] [--dry-run] [<type>] [--] [<args>...]
+  dockertest --version
 
   Options:
   --machine=NAME  docker machine name to use (non Linux)
   --no-prepare    don\'t reclone/recreate Dockerfile
   --no-cache      skip docker\'s cache on building
   --link LINK     passed to docker\'s --link option
-  --dry-run       don\'t launch container but print command to do so' -> str
+  --dry-run       don\'t launch container but print command to do so
+  --version       print version number and exit' -> str
   res <- docopt_parse(str, args)
   if (!isTRUE(res[["--"]]) && identical(res$type, "--")) {
     res["type"] <- list(NULL)
