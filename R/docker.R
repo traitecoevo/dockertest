@@ -64,12 +64,20 @@ docker_machine_init_which <- function(machine) {
     docker_machine <- callr::Sys_which("docker-machine")
     args <- c("ls", "-q", "--filter", "state=Running")
     machines <- callr::call_system(docker_machine, args)
-    if (length(machines) < 1L) {
-      stop("No running docker machines detected")
-    } else if (length(machines) > 1L) {
-      message("More than one machine present, taking the first")
+    if (is.null(machine)) {
+      if (length(machines) < 1L) {
+        stop("No running docker machines detected")
+      } else if (length(machines) > 1L) {
+        message("More than one machine present, taking the first")
+      }
+      machines[[1]]
+    } else {
+      if (!(machine %in% machines)) {
+        stop(sprintf("machine '%s' requested but not in running set: %s",
+                     machine, paste(machines, collapse=", ")))
+      }
+      machine
     }
-    machines[[1]]
   } else if (!is.null(machine) && Sys.getenv("DOCKER_MACHINE_NAME") != machine) {
     machine
   } else {
