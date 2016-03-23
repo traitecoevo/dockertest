@@ -7,8 +7,8 @@ r_packages:
 r_github_packages:
   - richfitz/remake
   - richfitz/ids
-  - richfitz/redux
   - ropensci/RedisAPI
+  - richfitz/redux
   - richfitz/RedisHeartbeat
   - gaborcsardi/progress
   - traitecoevo/rrqueue
