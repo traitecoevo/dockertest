@@ -64,10 +64,12 @@ docopt_parse <- function(...) {
 ##' @title Install dockertest worker script
 ##' @param destination_directory Directory to install to
 ##' @param overwrite Overwrite existing file?
+##' @importFrom callr Sys_which
 ##' @export
 install_script <- function(destination_directory, overwrite=FALSE) {
+
   script <- c(
-    "#!/usr/bin/Rscript",
+    paste0("#!", callr::Sys_which("Rscript")),
     "library(methods)",
     "dockertest:::main()")
 
