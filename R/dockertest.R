@@ -383,7 +383,7 @@ launch <- function(type="test", args=NULL, interactive=TRUE, dry_run=FALSE,
   if (!dry_run) {
     docker_machine_init(machine)
   }
-  docker <- callr::Sys_which("docker")
+  docker <- Sys_which("docker")
   info <- project_info(type)
 
   if (is.null(mount_volume)) {
@@ -413,7 +413,7 @@ launch <- function(type="test", args=NULL, interactive=TRUE, dry_run=FALSE,
   }
   args <- c("run", link, volume_map, interactive, info$tagname, args)
 
-  ## NOTE: Not using callr here because I need i/o
+  ## NOTE: Not using call_system here because I need i/o
   if (dry_run) {
     paste(c(docker, args), collapse = " ")
   } else {
