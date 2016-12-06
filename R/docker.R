@@ -18,19 +18,18 @@ format_docker <- function(commands, filename=NULL) {
 ##' @title Connect to a docker machine
 ##' @param machine Name of a machine
 ##' @export
-##' @importFrom callr Sys_which
 docker_machine_init <- function(machine=NULL) {
   machine <- docker_machine_init_which(machine)
   if (!is.null(machine)) {
     message(sprintf("Setting up docker-machine '%s'", machine))
-    docker_machine <- callr::Sys_which("docker-machine")
-    status <- callr::call_system(docker_machine, c("status", machine))
+    docker_machine <- Sys_which("docker-machine")
+    status <- call_system(docker_machine, c("status", machine))
     if (!identical(status, "Running")) {
       stop(sprintf("docker-machine '%s' not running? Status: '%s'",
                    machine, status))
     }
 
-    res <- callr::call_system(docker_machine, paste("env ", machine),
+    res <- call_system(docker_machine, paste("env ", machine),
                               stderr=FALSE)
 
     ## Filter to lines containing `export`
@@ -53,7 +52,7 @@ docker_machine_init <- function(machine=NULL) {
     if (Sys.getenv("DOCKER_HOST") == "") {
       stop("Failed to set docker_machine variables")
     }
-    tryCatch(callr::call_system(callr::Sys_which("docker"), "ps"),
+    tryCatch(call_system(Sys_which("docker"), "ps"),
              error=function(e)
                stop("While trying to test docker:\n", e$message))
   }
@@ -61,9 +60,9 @@ docker_machine_init <- function(machine=NULL) {
 
 docker_machine_init_which <- function(machine) {
   if (Sys.getenv("DOCKER_HOST") == "") {
-    docker_machine <- callr::Sys_which("docker-machine")
+    docker_machine <- Sys_which("docker-machine")
     args <- c("ls", "-q", "--filter", "state=Running")
-    machines <- callr::call_system(docker_machine, args)
+    machines <- call_system(docker_machine, args)
     if (is.null(machine)) {
       if (length(machines) < 1L) {
         stop("No running docker machines detected")
@@ -100,8 +99,8 @@ docker_build <- function(path, dockerfile, tagname, use_cache=TRUE,
             "-t", tagname,
             if (!use_cache) "--no-cache",
             path)
-  docker <- callr::Sys_which("docker")
-  ## NOTE: Using system2 and *not* callr::call_system here because I
+  docker <- Sys_which("docker")
+  ## NOTE: Using system2 and *not* call_system here because I
   ## want the program output to be printed here.
   ok <- system2("docker", args)
   if (ok != 0L) {
@@ -115,8 +114,8 @@ docker_image_id <- function(name, machine=NULL) {
     ## TODO: Also windows, apparently.
     docker_machine_init(machine)
   }
-  docker <- callr::Sys_which("docker")
-  callr::call_system(docker, c("images", "--no-trunc", "-q", name))
+  docker <- Sys_which("docker")
+  call_system(docker, c("images", "--no-trunc", "-q", name))
 }
 
 docker_join <- function(x, list=TRUE, sort=list) {
